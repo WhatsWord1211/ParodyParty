@@ -1,6 +1,6 @@
 # Parody Party
 
-A multiplayer music fill-in-the-blank game built with React Native and Expo.
+A multiplayer music fill-in-the-blank game built as a website.
 
 ## Overview
 
@@ -11,14 +11,14 @@ Parody Party is a game where players listen to music clips and fill in the blank
 - 🎵 Music-based prompts with fill-in-the-blank lyrics
 - 👥 Multiplayer support (2+ players)
 - 🔥 Real-time synchronization via Firebase
-- 📱 Cross-platform (iOS & Android)
-- 🎮 Simple lobby system with game codes
+- 🌐 Browser-based, device-friendly
+- 🎮 Simple lobby system with 4-letter game codes
+- 🔗 QR join links for quick access
 
 ## Prerequisites
 
 - Node.js (v16 or higher)
 - npm or yarn
-- Expo CLI (`npm install -g expo-cli`)
 - Firebase account and project
 
 ## Setup Instructions
@@ -71,16 +71,13 @@ Edit `src/utils/gameData.js` to add your song prompts with:
 - Lyrics with blank positions
 - Audio file URIs (hosted or local)
 
-### 5. Run the App
+### 5. Run the Website
 
 ```bash
-npm start
+npm run dev
 ```
 
-Then:
-- Press `i` for iOS simulator
-- Press `a` for Android emulator
-- Scan QR code with Expo Go app on your phone
+Then open the local URL shown in the terminal.
 
 ## Project Structure
 
@@ -94,14 +91,13 @@ ParodyParty/
 │   │   └── ResultsScreen.js
 │   ├── services/         # Firebase and game logic
 │   │   ├── firebase.js
-│   │   ├── gameService.js
-│   │   └── audioService.js
+│   │   └── gameService.js
 │   ├── utils/            # Utilities and game data
 │   │   └── gameData.js
-│   └── components/       # Reusable components (add as needed)
+│   └── components/       # Reusable components
 ├── assets/               # Images, sounds, etc.
-├── App.js               # Main app entry point
-├── app.json             # Expo configuration
+├── index.html            # Vite HTML entry
+├── vite.config.js        # Vite configuration
 └── package.json
 ```
 
@@ -122,14 +118,14 @@ ParodyParty/
 ## Development Notes
 
 - This is a **prototype** - focus on core functionality first
-- Audio files should be hosted (Firebase Storage, CDN, etc.) or included in assets
+- Prompts are text-only; no audio is required.
 - Game state is managed entirely in Firestore for real-time sync
 - All players see the same game state, UI adapts based on player role
 
 ## Next Steps
 
 - [ ] Add actual song prompts and audio files
-- [ ] Implement timer functionality
+- [ ] Add persistence/reconnect handling
 - [ ] Add animations and polish
 - [ ] Implement reconnection handling
 - [ ] Add sound effects
@@ -140,5 +136,6 @@ ParodyParty/
 ## License
 
 Private project
+
 
 

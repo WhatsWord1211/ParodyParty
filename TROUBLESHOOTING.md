@@ -35,3 +35,4 @@
 After you see the actual error message, we can fix it. The error boundary I added should now show the error on screen instead of just a blue screen.
 
 
+

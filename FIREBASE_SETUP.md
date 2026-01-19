@@ -142,3 +142,4 @@ Firebase free tier is generous, but you can monitor usage:
 For a prototype with a few testers, you'll stay well within free limits!
 
 
+
