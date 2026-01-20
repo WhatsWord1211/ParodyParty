@@ -130,6 +130,10 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
         </div>
 
         {mode === 'create' && (
+          <div className="divider">OR</div>
+        )}
+
+        {mode === 'create' && (
           <label className="toggle-row">
             <input
               type="checkbox"
