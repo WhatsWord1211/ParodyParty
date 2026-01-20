@@ -113,7 +113,7 @@ ParodyParty/
    - See all answers
    - Vote on answers (1-3 points)
    - View scores
-5. **Next Round**: Repeat until max rounds reached
+5. **Next Round**: Repeat until a player reaches 10,000 points
 
 ## Development Notes
 

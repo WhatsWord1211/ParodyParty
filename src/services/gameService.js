@@ -122,8 +122,7 @@ export const startGame = async (gameId, prompt = null) => {
   const updateData = {
     phase: 'prompt',
     round: 1,
-    timerEndsAt: timerEndsAt.toISOString(),
-    maxRounds: deleteField()
+    timerEndsAt: timerEndsAt.toISOString()
   };
   
   if (prompt) {
