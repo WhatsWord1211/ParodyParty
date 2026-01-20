@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   checkAndProgressToResults,
   leaveGame,
@@ -9,7 +9,7 @@ import {
 } from '../services/gameService';
 import { getRandomPrompt } from '../utils/gameData';
 
-export default function ResultsScreen({ gameId, playerId, onNavigate }) {
+export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
   const [rankedVotes, setRankedVotes] = useState([]);
   const [hasVoted, setHasVoted] = useState(false);
@@ -50,11 +50,11 @@ export default function ResultsScreen({ gameId, playerId, onNavigate }) {
         }
 
         if (data.phase === 'prompt' && data.round > 1) {
-          onNavigate('game', { gameId, playerId });
+          onNavigate('game', { gameId, playerId, isDisplayOnly });
         }
 
         if (data.phase === 'lobby') {
-          onNavigate('lobby', { gameId, playerId, isHost: data.hostId === playerId });
+          onNavigate('lobby', { gameId, playerId, isHost: data.hostId === playerId, isDisplayOnly });
         }
       }
     });
@@ -91,40 +91,49 @@ export default function ResultsScreen({ gameId, playerId, onNavigate }) {
     }
   }, [gameData?.phase, gameData?.timerEndsAt]);
 
-  const shuffledAnswers = useMemo(() => {
-    if (!gameData || !gameData.players || gameData.phase !== 'voting') {
-      return [];
+  useEffect(() => {
+    if (gameData?.phase === 'voting' && timeRemaining === 0) {
+      checkAndProgressToResults(gameId).catch(console.error);
     }
+  }, [gameData?.phase, timeRemaining, gameId]);
 
-    const players = Object.entries(gameData.players || {})
-      .filter(([id]) => id !== playerId)
-      .map(([id, player]) => ({
-        playerId: id,
-        answer: player.submission || 'No answer',
-        name: player.name
-      }));
+  const [shuffledAnswers, setShuffledAnswers] = useState([]);
 
-    const shuffled = [...players];
-    const seedString = `${gameId}-${gameData.round || 0}-${playerId}`;
-    let seed = 0;
-    for (let i = 0; i < seedString.length; i += 1) {
-      seed = (seed * 31 + seedString.charCodeAt(i)) % 233280;
+  useEffect(() => {
+    if (gameData?.phase === 'voting' && gameData.players) {
+      const players = Object.entries(gameData.players || {})
+        .filter(([id]) => id !== playerId)
+        .map(([id, player]) => ({
+          playerId: id,
+          answer: player.submission || 'No answer',
+          name: player.name
+        }))
+        .sort((a, b) => a.playerId.localeCompare(b.playerId));
+
+      const shuffled = [...players];
+      const seedString = `${gameId}-${gameData.round || 0}-${playerId}`;
+      let seed = 0;
+      for (let i = 0; i < seedString.length; i += 1) {
+        seed = (seed * 31 + seedString.charCodeAt(i)) % 233280;
+      }
+      const seededRandom = (() => {
+        let value = seed;
+        return () => {
+          value = (value * 9301 + 49297) % 233280;
+          return value / 233280;
+        };
+      })();
+
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      setShuffledAnswers(shuffled);
+    } else {
+      setShuffledAnswers([]);
     }
-    const seededRandom = (() => {
-      let value = seed;
-      return () => {
-        value = (value * 9301 + 49297) % 233280;
-        return value / 233280;
-      };
-    })();
-
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(seededRandom() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-
-    return shuffled;
-  }, [gameData?.phase, gameData?.players, gameData?.round, playerId]);
+  }, [gameData?.phase, gameData?.players, gameData?.round, gameId, playerId]);
 
   useEffect(() => {
     if (gameData?.phase === 'results') {
@@ -220,7 +229,7 @@ export default function ResultsScreen({ gameId, playerId, onNavigate }) {
           );
           })}
 
-          {!hasVoted && !localSubmitted && (
+          {!isDisplayOnly && !hasVoted && !localSubmitted && (
             <>
               <div className="center" style={{ marginTop: 12 }}>
                 <p>
@@ -238,9 +247,11 @@ export default function ResultsScreen({ gameId, playerId, onNavigate }) {
             </>
           )}
 
-          {(hasVoted || localSubmitted) && (
+          {!isDisplayOnly && (hasVoted || localSubmitted) && (
             <p className="center">{statusMessage || 'Waiting for other players to vote...'}</p>
           )}
+
+          {isDisplayOnly && <p className="center">Voting in progress...</p>}
         </div>
       </div>
     );

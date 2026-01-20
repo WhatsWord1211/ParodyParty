@@ -19,6 +19,7 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
   const [gameCode, setGameCode] = useState(initialGameCode || '');
   const [loading, setLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [isDisplayOnly, setIsDisplayOnly] = useState(false);
   const [error, setError] = useState('');
 
   const handleScan = useCallback(
@@ -42,7 +43,7 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
   }, [initialGameCode]);
 
   const handleCreateGame = async () => {
-    if (!playerName.trim()) {
+    if (!isDisplayOnly && !playerName.trim()) {
       setError('Please enter your name.');
       return;
     }
@@ -52,8 +53,9 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
     try {
       const userCredential = await signInAnonymously(auth);
       const userId = userCredential.user.uid;
-      const gameId = await createGame(userId, playerName.trim());
-      onNavigate('lobby', { gameId, playerId: userId, isHost: true });
+      const hostName = isDisplayOnly ? 'Host Screen' : playerName.trim();
+      const gameId = await createGame(userId, hostName, { hostIsPlayer: !isDisplayOnly });
+      onNavigate('lobby', { gameId, playerId: userId, isHost: true, isDisplayOnly });
     } catch (error) {
       setError(`Failed to create game: ${error.message}`);
     } finally {
@@ -123,8 +125,23 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
             value={playerName}
             onChange={(event) => setPlayerName(event.target.value)}
             maxLength={20}
+            disabled={mode === 'create' && isDisplayOnly}
           />
         </div>
+
+        {mode === 'create' && (
+          <label className="toggle-row">
+            <input
+              type="checkbox"
+              checked={isDisplayOnly}
+              onChange={(event) => {
+                setIsDisplayOnly(event.target.checked);
+                setError('');
+              }}
+            />
+            <span>Display-only host screen (no participation)</span>
+          </label>
+        )}
 
         {mode === 'join' && (
           <div className="input-group">
@@ -149,7 +166,11 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
         <button
           className={`button ${mode === 'create' ? 'button-primary' : 'button-secondary'}`}
           onClick={mode === 'create' ? handleCreateGame : handleJoinGame}
-          disabled={loading || !playerName.trim() || (mode === 'join' && !gameCode.trim())}
+          disabled={
+            loading ||
+            (!isDisplayOnly && mode === 'create' && !playerName.trim()) ||
+            (mode === 'join' && (!playerName.trim() || !gameCode.trim()))
+          }
         >
           {loading ? 'Working...' : mode === 'create' ? 'Create Game' : 'Join Game'}
         </button>
@@ -172,6 +193,7 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
             setPlayerName('');
             setGameCode(initialGameCode || '');
             setShowScanner(false);
+            setIsDisplayOnly(false);
             setError('');
           }}
         >

@@ -34,7 +34,8 @@ import { db } from './firebase';
  *   - createdAt: timestamp
  */
 
-export const createGame = async (hostId, hostName, maxRounds = 5) => {
+export const createGame = async (hostId, hostName, options = {}) => {
+  const { hostIsPlayer = true } = options;
   let gameId = '';
   let gameRef = null;
   let attempts = 0;
@@ -55,22 +56,23 @@ export const createGame = async (hostId, hostName, maxRounds = 5) => {
     hostId,
     phase: 'lobby',
     round: 0,
-    maxRounds,
     currentPrompt: null,
     timerEndsAt: null,
     usedPrompts: [], // Track which prompts have been used
-    players: {
-      [hostId]: {
-        name: hostName,
-        score: 0,
-        totalFirstPlaceVotes: 0,
-        connected: true,
-        submission: null,
-        votes: null
-      }
-    },
+    players: {},
     createdAt: serverTimestamp()
   };
+
+  if (hostIsPlayer) {
+    gameData.players[hostId] = {
+      name: hostName,
+      score: 0,
+      totalFirstPlaceVotes: 0,
+      connected: true,
+      submission: null,
+      votes: null
+    };
+  }
   
   await setDoc(gameRef, gameData);
   return gameId;
@@ -158,7 +160,16 @@ export const checkAndProgressToVoting = async (gameId) => {
       const currentSnap = await getDoc(gameRef);
       if (currentSnap.exists() && currentSnap.data().phase === 'prompt') {
         const votingEndsAt = new Date(Date.now() + 120000);
-        await updateDoc(gameRef, { phase: 'voting', timerEndsAt: votingEndsAt.toISOString() });
+        const updates = { phase: 'voting', timerEndsAt: votingEndsAt.toISOString() };
+
+        // Fill in missing submissions so voting can proceed.
+        Object.entries(players).forEach(([playerId, player]) => {
+          if (player.submission === null) {
+            updates[`players.${playerId}.submission`] = `${player.name} did not answer`;
+          }
+        });
+
+        await updateDoc(gameRef, updates);
       }
     } catch (error) {
       console.error('Error progressing to voting:', error);

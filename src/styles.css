@@ -179,6 +179,20 @@ input {
   scroll-margin-bottom: 120px;
 }
 
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 20px;
+  color: #444;
+  font-weight: 600;
+}
+
+.toggle-row input {
+  width: 18px;
+  height: 18px;
+}
+
 .lyrics-line {
   text-align: center;
   margin-bottom: 8px;

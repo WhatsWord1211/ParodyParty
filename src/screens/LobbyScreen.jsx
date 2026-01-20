@@ -3,7 +3,7 @@ import { subscribeToGame, startGame } from '../services/gameService';
 import { getRandomPrompt } from '../utils/gameData';
 import { QRCodeCanvas } from 'qrcode.react';
 
-export default function LobbyScreen({ gameId, playerId, isHost, onNavigate }) {
+export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -15,7 +15,7 @@ export default function LobbyScreen({ gameId, playerId, isHost, onNavigate }) {
       if (data) {
         setGameData(data);
         if (data.phase === 'prompt') {
-          onNavigate('game', { gameId, playerId });
+          onNavigate('game', { gameId, playerId, isDisplayOnly });
         }
       }
     });

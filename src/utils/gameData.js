@@ -4,7 +4,6 @@
  * Structure:
  * {
  *   promptId: string,
- *   title: string,
  *   prompt: string, // Text prompt shown to all players
  *   blankPosition: number, // Which line has the blank
  *   difficulty: 'easy' | 'medium' | 'hard'
@@ -14,602 +13,502 @@
 export const textPrompts = [
   {
     promptId: '1',
-    title: 'Prompt 1',
-    prompt: 'I knew the plan was bad when it involved ____ and a stopwatch.',
+    prompt: 'I knew our plans for robbing the bank were bad when Dale came out wearing ____.',
     difficulty: 'easy'
   },
   {
     promptId: '2',
-    title: 'Prompt 2',
-    prompt: 'The teacher paused the class after discovering ____ inside the desk.',
+    prompt: 'The teacher paused the class after discovering ____ inside their desk.',
     difficulty: 'easy'
   },
   {
     promptId: '3',
-    title: 'Prompt 3',
-    prompt: 'Every family reunion ends with someone mentioning ____.',
+    prompt: 'Our family reunion always comes to a crashing halt every time grandma mentions ____.',
     difficulty: 'easy'
   },
   {
     promptId: '4',
-    title: 'Prompt 4',
     prompt: 'The rule was clear: no ____ after midnight.',
     difficulty: 'easy'
   },
   {
     promptId: '5',
-    title: 'Prompt 5',
-    prompt: 'The instructions were simple, except for the part about ____.',
+    prompt: 'The instructions for feeding the dog seemed simple, except the part about ____.',
     difficulty: 'easy'
   },
   {
     promptId: '6',
-    title: 'Prompt 6',
-    prompt: 'Nobody expected the meeting to turn into a discussion about ____.',
+    prompt: 'Nobody expected our business meeting to turn into a discussion about ____.',
     difficulty: 'easy'
   },
   {
     promptId: '7',
-    title: 'Prompt 7',
-    prompt: 'The hero’s secret weakness turned out to be ____.',
+    prompt: 'Superman’s other secret weakness turned out to be ____.',
     difficulty: 'easy'
   },
   {
     promptId: '8',
-    title: 'Prompt 8',
-    prompt: 'I realized I was underprepared when my bag contained only ____ and hope.',
+    prompt: 'I realized I was underprepared when my go bag contained only ____.',
     difficulty: 'easy'
   },
   {
     promptId: '9',
-    title: 'Prompt 9',
-    prompt: 'The sign warned visitors to beware of ____.',
+    prompt: 'The house sign warned visitors to beware of ____.',
     difficulty: 'easy'
   },
   {
     promptId: '10',
-    title: 'Prompt 10',
-    prompt: 'The experiment failed immediately due to an unexpected ____.',
+    prompt: 'My 4th grade science experiment failed immediately due to an unexpected ____.',
     difficulty: 'easy'
   },
   {
     promptId: '11',
-    title: 'Prompt 11',
-    prompt: 'My confidence disappeared the moment I heard ____.',
+    prompt: 'My confidence disappeared the moment I heard my mom say ____.',
     difficulty: 'easy'
   },
   {
     promptId: '12',
-    title: 'Prompt 12',
-    prompt: 'The recipe called for flour, sugar, and a surprising amount of ____.',
+    prompt: 'Mom’s secret recipe called for flour, sugar, and a surprising amount of ____.',
     difficulty: 'easy'
   },
   {
     promptId: '13',
-    title: 'Prompt 13',
-    prompt: 'The vacation was perfect until we encountered ____.',
+    prompt: 'The vacation was perfect until we encountered dad with ____.',
     difficulty: 'easy'
   },
   {
     promptId: '14',
-    title: 'Prompt 14',
-    prompt: 'The manual specifically said never to mix electricity with ____.',
+    prompt: 'The manual specifically said never to cross the red wire with the blue one because ____.',
     difficulty: 'easy'
   },
   {
     promptId: '15',
-    title: 'Prompt 15',
-    prompt: 'Everyone applauded when the performance included ____.',
+    prompt: 'Everyone applauded during my solo because ____.',
     difficulty: 'easy'
   },
   {
     promptId: '16',
-    title: 'Prompt 16',
-    prompt: 'The new company policy exists entirely because of ____.',
+    prompt: 'The new company policy exists entirely because Joe ____.',
     difficulty: 'easy'
   },
   {
     promptId: '17',
-    title: 'Prompt 17',
-    prompt: 'The mystery was solved when detectives found ____.',
+    prompt: 'The mystery of the missing child was solved when detectives found ____.',
     difficulty: 'easy'
   },
   {
     promptId: '18',
-    title: 'Prompt 18',
-    prompt: 'The parade came to a halt after ____ rolled down the street.',
+    prompt: 'The Christmas parade came to a halt after ____ rolled down the street.',
     difficulty: 'easy'
   },
   {
     promptId: '19',
-    title: 'Prompt 19',
-    prompt: 'The alarm went off, but it was just ____.',
+    prompt: 'My alarm went off, but it was just reminding me ____.',
     difficulty: 'easy'
   },
   {
     promptId: '20',
-    title: 'Prompt 20',
-    prompt: 'The job interview was going well until they asked about ____.',
+    prompt: 'The job interview was going well until they asked me about ____.',
     difficulty: 'easy'
   },
   {
     promptId: '21',
-    title: 'Prompt 21',
-    prompt: 'The inventor insisted the machine would work if we added ____.',
+    prompt: 'The inventor insisted the time machine would work if we just added ____.',
     difficulty: 'easy'
   },
   {
     promptId: '22',
-    title: 'Prompt 22',
-    prompt: 'The game night ended early after ____ was introduced.',
+    prompt: 'Game night ended early after ____ was introduced.',
     difficulty: 'easy'
   },
   {
     promptId: '23',
-    title: 'Prompt 23',
-    prompt: 'The apology sounded sincere until it mentioned ____.',
+    prompt: 'Grandpa’s apology sounded sincere until he mentioned ____.',
     difficulty: 'easy'
   },
   {
     promptId: '24',
-    title: 'Prompt 24',
     prompt: 'The wizard’s spell backfired and summoned ____.',
     difficulty: 'easy'
   },
   {
     promptId: '25',
-    title: 'Prompt 25',
     prompt: 'The meeting agenda somehow included ____ twice.',
     difficulty: 'easy'
   },
   {
     promptId: '26',
-    title: 'Prompt 26',
     prompt: 'I trusted the plan until someone whispered ____.',
     difficulty: 'easy'
   },
   {
     promptId: '27',
-    title: 'Prompt 27',
-    prompt: 'The museum exhibit was shut down because of ____.',
+    prompt: 'The museum exhibit was shut down after my sister ____.',
     difficulty: 'easy'
   },
   {
     promptId: '28',
-    title: 'Prompt 28',
-    prompt: 'The new invention promised convenience but delivered ____.',
+    prompt: 'My dad’s new invention promised convenience but delivered ____.',
     difficulty: 'easy'
   },
   {
     promptId: '29',
-    title: 'Prompt 29',
     prompt: 'The party theme made sense once we saw ____.',
     difficulty: 'easy'
   },
   {
     promptId: '30',
-    title: 'Prompt 30',
     prompt: 'The coach’s motivational speech focused heavily on ____.',
     difficulty: 'easy'
   },
   {
     promptId: '31',
-    title: 'Prompt 31',
-    prompt: 'The road trip became unforgettable thanks to ____.',
+    prompt: 'The family road trip became unforgettable thanks to ____.',
     difficulty: 'easy'
   },
   {
     promptId: '32',
-    title: 'Prompt 32',
     prompt: 'The instructions warned users not to stare directly at ____.',
     difficulty: 'easy'
   },
   {
     promptId: '33',
-    title: 'Prompt 33',
     prompt: 'The detective raised an eyebrow after finding ____.',
     difficulty: 'easy'
   },
   {
     promptId: '34',
-    title: 'Prompt 34',
-    prompt: 'The surprise was ruined when ____ arrived early.',
+    prompt: 'Dad’s surprise birthday party was ruined when mom ____.',
     difficulty: 'easy'
   },
   {
     promptId: '35',
-    title: 'Prompt 35',
-    prompt: 'The talent show judge was speechless after ____.',
+    prompt: 'The talent show judge was speechless after I ____.',
     difficulty: 'easy'
   },
   {
     promptId: '36',
-    title: 'Prompt 36',
-    prompt: 'The secret ingredient turned out to be ____.',
+    prompt: 'The secret ingredient in my wife\'s special casserole turned out to be ____.',
     difficulty: 'easy'
   },
   {
     promptId: '37',
-    title: 'Prompt 37',
-    prompt: 'The plan sounded reasonable until it required ____.',
+    prompt: 'The plan sounded reasonable until Bill required ____.',
     difficulty: 'easy'
   },
   {
     promptId: '38',
-    title: 'Prompt 38',
-    prompt: 'The celebration stopped abruptly due to ____.',
+    prompt: 'The touchdown celebration stopped abruptly due to ____.',
     difficulty: 'easy'
   },
   {
     promptId: '39',
-    title: 'Prompt 39',
-    prompt: 'The warning label existed because someone once tried ____.',
+    prompt: 'They put a warning label on milk because someone once tried ____.',
     difficulty: 'easy'
   },
   {
     promptId: '40',
-    title: 'Prompt 40',
-    prompt: 'The invention worked perfectly, except for the ____.',
+    prompt: 'The invention worked perfectly, provided you only have one ____.',
     difficulty: 'easy'
   },
   {
     promptId: '41',
-    title: 'Prompt 41',
-    prompt: 'The announcement caused confusion when it mentioned ____.',
+    prompt: 'The wedding announcement caused confusion when it mentioned ____.',
     difficulty: 'easy'
   },
   {
     promptId: '42',
-    title: 'Prompt 42',
-    prompt: 'The room went silent after someone suggested ____.',
+    prompt: 'The room went silent after I farted. It’s all good though, because I blamed it on ____.',
     difficulty: 'easy'
   },
   {
     promptId: '43',
-    title: 'Prompt 43',
     prompt: 'The presentation included charts, graphs, and ____.',
     difficulty: 'easy'
   },
   {
     promptId: '44',
-    title: 'Prompt 44',
     prompt: 'The costume was impressive, but the ____ made it unforgettable.',
     difficulty: 'easy'
   },
   {
     promptId: '45',
-    title: 'Prompt 45',
-    prompt: 'The magic trick failed when ____ fell out.',
+    prompt: 'My magic trick failed when ____ fell out.',
     difficulty: 'easy'
   },
   {
     promptId: '46',
-    title: 'Prompt 46',
-    prompt: 'The guidebook strongly discouraged ____.',
+    prompt: 'The Nebraska guidebook strongly discouraged ____.',
     difficulty: 'easy'
   },
   {
     promptId: '47',
-    title: 'Prompt 47',
-    prompt: 'The celebration became awkward once ____ was revealed.',
+    prompt: 'The baby celebration became awkward once ____ was revealed.',
     difficulty: 'easy'
   },
   {
     promptId: '48',
-    title: 'Prompt 48',
-    prompt: 'The training session ended early because of ____.',
+    prompt: 'My first day on the job ended early after my new boss ____.',
     difficulty: 'easy'
   },
   {
     promptId: '49',
-    title: 'Prompt 49',
-    prompt: 'The hero paused dramatically before revealing ____.',
+    prompt: 'Mom paused dramatically before revealing Dad had ____.',
     difficulty: 'easy'
   },
   {
     promptId: '50',
-    title: 'Prompt 50',
-    prompt: 'The surprise gift turned out to be ____.',
+    prompt: 'On my 10th birthday, I received a surprise gift that turned out to be ____.',
     difficulty: 'easy'
   },
   {
     promptId: '51',
-    title: 'Prompt 51',
-    prompt: 'The competition was cancelled after ____ appeared.',
+    prompt: 'The weightlifting competition was cancelled after ____.',
     difficulty: 'easy'
   },
   {
     promptId: '52',
-    title: 'Prompt 52',
-    prompt: 'The announcement made sense, except for the part about ____.',
+    prompt: 'The school announcement made sense, except for the part about my teacher now ____.',
     difficulty: 'easy'
   },
   {
     promptId: '53',
-    title: 'Prompt 53',
-    prompt: 'The strategy relied heavily on ____.',
+    prompt: 'My checkers strategy relies heavily on ____.',
     difficulty: 'easy'
   },
   {
     promptId: '54',
-    title: 'Prompt 54',
-    prompt: 'The discovery shocked everyone, especially ____.',
+    prompt: 'The discovery of the dead body shocked everyone, especially ____.',
     difficulty: 'easy'
   },
   {
     promptId: '55',
-    title: 'Prompt 55',
-    prompt: 'The celebration included cake, music, and ____.',
+    prompt: 'Grandpa’s birthday celebration included cake, music, and his favorite ____.',
     difficulty: 'easy'
   },
   {
     promptId: '56',
-    title: 'Prompt 56',
-    prompt: 'The warning came too late, just as ____ happened.',
+    prompt: 'The tornado warning came too late, I was in the middle of ____.',
     difficulty: 'easy'
   },
   {
     promptId: '57',
-    title: 'Prompt 57',
-    prompt: 'The experiment’s unexpected result was ____.',
+    prompt: 'The science experiment’s unexpected result was ____.',
     difficulty: 'easy'
   },
   {
     promptId: '58',
-    title: 'Prompt 58',
-    prompt: 'The new rule was created to prevent ____.',
+    prompt: 'The new rule at work was created to prevent me from ____.',
     difficulty: 'easy'
   },
   {
     promptId: '59',
-    title: 'Prompt 59',
     prompt: 'The meeting room smelled strongly of ____.',
     difficulty: 'easy'
   },
   {
     promptId: '60',
-    title: 'Prompt 60',
     prompt: 'The magician blamed the failure on ____.',
     difficulty: 'easy'
   },
   {
     promptId: '61',
-    title: 'Prompt 61',
     prompt: 'The adventure truly began once we found ____.',
     difficulty: 'easy'
   },
   {
     promptId: '62',
-    title: 'Prompt 62',
-    prompt: 'The conversation took a turn when ____ was mentioned.',
+    prompt: 'The conversation with mom took a turn when ____ was mentioned.',
     difficulty: 'easy'
   },
   {
     promptId: '63',
-    title: 'Prompt 63',
-    prompt: 'The instructions ended with a note about ____.',
+    prompt: 'The instructions for watching our neighbor’s dog ended with a note about ____.',
     difficulty: 'easy'
   },
   {
     promptId: '64',
-    title: 'Prompt 64',
-    prompt: 'The invention gained popularity despite ____.',
+    prompt: 'The invention of goggles gained popularity despite ____.',
     difficulty: 'easy'
   },
   {
     promptId: '65',
-    title: 'Prompt 65',
-    prompt: 'The celebration ended when ____ ran out.',
+    prompt: 'The funeral service ended when ____ ran out.',
     difficulty: 'easy'
   },
   {
     promptId: '66',
-    title: 'Prompt 66',
     prompt: 'The team agreed the plan depended entirely on ____.',
     difficulty: 'easy'
   },
   {
     promptId: '67',
-    title: 'Prompt 67',
     prompt: 'The warning sign featured a picture of ____.',
     difficulty: 'easy'
   },
   {
     promptId: '68',
-    title: 'Prompt 68',
-    prompt: 'The performance received a standing ovation for ____.',
+    prompt: 'The school play received a standing ovation for ____.',
     difficulty: 'easy'
   },
   {
     promptId: '69',
-    title: 'Prompt 69',
-    prompt: 'The discovery raised more questions about ____.',
+    prompt: 'The discovery of the remains raised more questions about ____.',
     difficulty: 'easy'
   },
   {
     promptId: '70',
-    title: 'Prompt 70',
-    prompt: 'The celebration paused briefly for ____.',
+    prompt: 'The celebration paused briefly for ____ before going late into the night.',
     difficulty: 'easy'
   },
   {
     promptId: '71',
-    title: 'Prompt 71',
-    prompt: 'The meeting was productive until someone brought up ____.',
+    prompt: 'I had to take the bus because my car ____.',
     difficulty: 'easy'
   },
   {
     promptId: '72',
-    title: 'Prompt 72',
-    prompt: 'The vacation memory everyone remembers involves ____.',
+    prompt: 'The vacation memory everyone remembers about me involves ____.',
     difficulty: 'easy'
   },
   {
     promptId: '73',
-    title: 'Prompt 73',
-    prompt: 'The invention was praised for innovation and ____.',
+    prompt: 'I walked here simply to spite ____.',
     difficulty: 'easy'
   },
   {
     promptId: '74',
-    title: 'Prompt 74',
-    prompt: 'The hero’s journey was interrupted by ____.',
+    prompt: 'I caught grandma reading ____.',
     difficulty: 'easy'
   },
   {
     promptId: '75',
-    title: 'Prompt 75',
-    prompt: 'The lesson was learned after ____ went wrong.',
+    prompt: 'The lesson was finally learned after dad slipped on ____ for the third time.',
     difficulty: 'easy'
   },
   {
     promptId: '76',
-    title: 'Prompt 76',
-    prompt: 'The instructions included a footnote about ____.',
+    prompt: 'The instructions on the frozen waffles included a note about ____.',
     difficulty: 'easy'
   },
   {
     promptId: '77',
-    title: 'Prompt 77',
     prompt: 'The surprise made sense once we saw ____.',
     difficulty: 'easy'
   },
   {
     promptId: '78',
-    title: 'Prompt 78',
-    prompt: 'The team celebrated by sharing ____.',
+    prompt: 'The team celebrated by sharing my ____.',
     difficulty: 'easy'
   },
   {
     promptId: '79',
-    title: 'Prompt 79',
-    prompt: 'The plan required courage, teamwork, and ____.',
+    prompt: 'My plan to lose weight requires courage, teamwork, and ____.',
     difficulty: 'easy'
   },
   {
     promptId: '80',
-    title: 'Prompt 80',
-    prompt: 'The announcement concluded with a warning about ____.',
+    prompt: 'The wedding announcement concluded with a warning about ____.',
     difficulty: 'easy'
   },
   {
     promptId: '81',
-    title: 'Prompt 81',
-    prompt: 'The competition featured speed, skill, and ____.',
+    prompt: 'The shooting competition featured speed, skill, and ____.',
     difficulty: 'easy'
   },
   {
     promptId: '82',
-    title: 'Prompt 82',
-    prompt: 'The experiment succeeded, creating ____.',
+    prompt: 'I have friends that no one knows about, including ____.',
     difficulty: 'easy'
   },
   {
     promptId: '83',
-    title: 'Prompt 83',
-    prompt: 'The party ended when ____ arrived unexpectedly.',
+    prompt: 'My birthday party ended when ____ arrived unexpectedly.',
     difficulty: 'easy'
   },
   {
     promptId: '84',
-    title: 'Prompt 84',
-    prompt: 'The invention caused excitement and ____.',
+    prompt: 'My arrival at the pool caused excitement and ____.',
     difficulty: 'easy'
   },
   {
     promptId: '85',
-    title: 'Prompt 85',
-    prompt: 'The journey took an unexpected detour due to ____.',
+    prompt: 'My college journey took an unexpected detour due to ____.',
     difficulty: 'easy'
   },
   {
     promptId: '86',
-    title: 'Prompt 86',
-    prompt: 'The meeting notes highlighted concerns about ____.',
+    prompt: 'I saw my doctor’s notes about me and they highlighted concerns about ____.',
     difficulty: 'easy'
   },
   {
     promptId: '87',
-    title: 'Prompt 87',
-    prompt: 'The celebration included balloons, music, and ____.',
+    prompt: 'My wife’s birthday celebration included balloons, music, and ____.',
     difficulty: 'easy'
   },
   {
     promptId: '88',
-    title: 'Prompt 88',
     prompt: 'The plan changed dramatically after ____.',
     difficulty: 'easy'
   },
   {
     promptId: '89',
-    title: 'Prompt 89',
     prompt: 'The discovery explained everything except ____.',
     difficulty: 'easy'
   },
   {
     promptId: '90',
-    title: 'Prompt 90',
     prompt: 'The adventure was remembered mostly for ____.',
     difficulty: 'easy'
   },
   {
     promptId: '91',
-    title: 'Prompt 91',
     prompt: 'The surprise announcement focused on ____.',
     difficulty: 'easy'
   },
   {
     promptId: '92',
-    title: 'Prompt 92',
     prompt: 'The experiment’s conclusion mentioned ____.',
     difficulty: 'easy'
   },
   {
     promptId: '93',
-    title: 'Prompt 93',
-    prompt: 'The plan succeeded despite ____.',
+    prompt: 'The plan to steal candy from the baby succeeded despite ____.',
     difficulty: 'easy'
   },
   {
     promptId: '94',
-    title: 'Prompt 94',
     prompt: 'The party theme became clear once ____ appeared.',
     difficulty: 'easy'
   },
   {
     promptId: '95',
-    title: 'Prompt 95',
-    prompt: 'The invention was revolutionary, especially the ____.',
+    prompt: 'The invention of the internet was revolutionary because now ____.',
     difficulty: 'easy'
   },
   {
     promptId: '96',
-    title: 'Prompt 96',
-    prompt: 'The meeting ended early because of ____.',
+    prompt: 'The meeting with my banker ended early because ____.',
     difficulty: 'easy'
   },
   {
     promptId: '97',
-    title: 'Prompt 97',
     prompt: 'The journey was long, tiring, and full of ____.',
     difficulty: 'easy'
   },
   {
     promptId: '98',
-    title: 'Prompt 98',
-    prompt: 'The discovery sparked debates about ____.',
+    prompt: 'The discovery of the onion in my salad sparked  ____.',
     difficulty: 'easy'
   },
   {
     promptId: '99',
-    title: 'Prompt 99',
-    prompt: 'The celebration paused to acknowledge ____.',
+    prompt: 'The celebration paused when a wheelchair  ____.',
     difficulty: 'easy'
   },
   {
     promptId: '100',
-    title: 'Prompt 100',
-    prompt: 'The story ends with a lesson about ____.',
+    prompt: 'The bedtime story ends with a lesson about ____.',
     difficulty: 'easy'
   }
 ];

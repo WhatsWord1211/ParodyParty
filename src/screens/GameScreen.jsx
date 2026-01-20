@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { subscribeToGame, submitAnswer, checkAndProgressToVoting } from '../services/gameService';
 
-export default function GameScreen({ gameId, playerId, onNavigate }) {
+export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
   const [answer, setAnswer] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -114,14 +114,11 @@ export default function GameScreen({ gameId, playerId, onNavigate }) {
     <div className="page">
       <div className="card">
         <div className="center">
-          <p>
-            Round {gameData.round} of {gameData.maxRounds}
-          </p>
-            {gameData.phase === 'prompt' && (
+          {gameData.phase === 'prompt' && (
             <div className="timer">{timeRemaining > 0 ? formatTime(timeRemaining) : "Time's up!"}</div>
           )}
           <h2>Round {gameData.round}</h2>
-          <p className="subtitle">Submit your answer</p>
+          <p className="subtitle">{isDisplayOnly ? 'Display screen' : 'Submit your answer'}</p>
           {prompt?.prompt && <p className="subtitle">{prompt.prompt}</p>}
         </div>
 
@@ -130,7 +127,7 @@ export default function GameScreen({ gameId, playerId, onNavigate }) {
             <h3>Prompt</h3>
             <p className="center">{prompt.prompt || 'Answer the prompt above.'}</p>
 
-            {!submitted && timeRemaining > 0 ? (
+            {!isDisplayOnly && !submitted && timeRemaining > 0 ? (
               <div style={{ marginTop: 16 }}>
                 <input
                   ref={inputRef}
@@ -148,6 +145,10 @@ export default function GameScreen({ gameId, playerId, onNavigate }) {
                 <button className="button button-primary" onClick={handleSubmit} disabled={!answer.trim()}>
                   Submit
                 </button>
+              </div>
+            ) : isDisplayOnly ? (
+              <div className="center" style={{ marginTop: 16 }}>
+                <strong>Waiting for players to submit...</strong>
               </div>
             ) : submitted ? (
               <div className="center" style={{ marginTop: 16 }}>
