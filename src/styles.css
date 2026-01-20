@@ -4,9 +4,9 @@
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f5f5f5;
-  color: #333;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: radial-gradient(circle at top, #e8f0ff 0%, #f7f8fb 40%, #ffffff 100%);
+  color: #1f2937;
 }
 
 button,
@@ -23,23 +23,25 @@ input {
 }
 
 .card {
-  background: #fff;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
   padding: 32px;
   width: min(680px, 100%);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .title {
-  font-size: 40px;
-  font-weight: 700;
+  font-size: 42px;
+  font-weight: 800;
   text-align: center;
   margin-bottom: 8px;
 }
 
 .subtitle {
   text-align: center;
-  color: #666;
+  color: #6b7280;
   margin-bottom: 24px;
 }
 
@@ -47,12 +49,16 @@ input {
   width: 100%;
   padding: 14px 18px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   color: #fff;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
 }
 
 .button:disabled {
@@ -61,20 +67,21 @@ input {
 }
 
 .button-selected {
-  outline: 3px solid #2e7d32;
+  outline: 3px solid rgba(34, 197, 94, 0.5);
+  box-shadow: 0 10px 20px rgba(34, 197, 94, 0.2);
 }
 .button-primary {
-  background: #4caf50;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
 }
 
 .button-secondary {
-  background: #2196f3;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
 }
 
 .button-outline {
-  background: transparent;
-  border: 2px solid #2196f3;
-  color: #2196f3;
+  background: #ffffff;
+  border: 2px solid #bfdbfe;
+  color: #1d4ed8;
 }
 
 .button-row {
@@ -92,7 +99,7 @@ input {
   align-items: center;
   gap: 12px;
   margin: 20px 0;
-  color: #999;
+  color: #94a3b8;
   font-size: 14px;
 }
 
@@ -101,7 +108,7 @@ input {
   content: '';
   height: 1px;
   flex: 1;
-  background: #ddd;
+  background: #e2e8f0;
 }
 
 .input-group {
@@ -118,15 +125,24 @@ input {
 .input {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   font-size: 16px;
+  background: #fff;
+  color: #1f2937;
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.04);
+}
+
+.input:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.4);
 }
 
 .back-link {
   margin-top: 16px;
   text-align: center;
-  color: #666;
+  color: #6b7280;
   cursor: pointer;
 }
 
@@ -139,7 +155,7 @@ input {
   font-size: 28px;
   font-weight: 700;
   letter-spacing: 6px;
-  color: #2196f3;
+  color: #1d4ed8;
 }
 
 .players-list {
@@ -153,13 +169,13 @@ input {
   align-items: center;
   justify-content: space-between;
   padding: 12px;
-  border-radius: 12px;
-  background: #f8f8f8;
+  border-radius: 14px;
+  background: #f8fafc;
   margin-bottom: 10px;
 }
 
 .badge {
-  background: #ffc107;
+  background: #fcd34d;
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 12px;
@@ -167,11 +183,11 @@ input {
 }
 
 .prompt-card {
-  background: #fff;
-  border-radius: 16px;
+  background: #ffffff;
+  border-radius: 18px;
   padding: 20px;
   margin-bottom: 16px;
-  border: 1px solid #eee;
+  border: 1px solid #e2e8f0;
   position: relative;
 }
 
@@ -184,7 +200,7 @@ input {
   align-items: center;
   gap: 10px;
   margin: 10px 0 20px;
-  color: #444;
+  color: #475569;
   font-weight: 600;
 }
 
@@ -206,7 +222,7 @@ input {
 .timer {
   font-size: 22px;
   font-weight: 700;
-  color: #f44336;
+  color: #ef4444;
   margin: 10px 0;
   text-align: center;
 }
@@ -216,16 +232,17 @@ input {
 }
 
 .score-card {
-  background: #fff;
-  border-radius: 12px;
+  background: #ffffff;
+  border-radius: 14px;
   padding: 14px;
   margin-bottom: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 .score-banner {
-  background: #e3f2fd;
-  color: #0d47a1;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #dbeafe 0%, #eef2ff 100%);
+  color: #1e3a8a;
+  border-radius: 14px;
   padding: 12px 16px;
   margin: 12px 0 20px;
   text-align: center;
@@ -245,7 +262,7 @@ input {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #ff9800;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
   color: #fff;
   font-weight: 700;
   margin: 8px auto 0;
@@ -268,8 +285,8 @@ input {
 
 .qr-scanner {
   margin-top: 16px;
-  border: 1px solid #eee;
-  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
   padding: 16px;
 }
 
@@ -285,15 +302,15 @@ input {
 
 .loading-text {
   font-size: 18px;
-  color: #666;
+  color: #6b7280;
 }
 
 .error-text {
-  color: #d32f2f;
+  color: #dc2626;
 }
 
 .error-details {
-  color: #999;
+  color: #94a3b8;
 }
 
 .status-text {
