@@ -93,6 +93,9 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
       <div className="page">
         <div className="card">
           <h1 className="title">Parody Party</h1>
+          <div className="center">
+            <span className="version-pill">BUILD UI-1</span>
+          </div>
           <p className="subtitle">Everyone plays on their own screen — anywhere.</p>
           <button className="button button-primary" onClick={() => setMode('create')}>
             Create Game
@@ -112,6 +115,9 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
     <div className="page">
       <div className="card">
         <h1 className="title">Parody Party</h1>
+        <div className="center">
+          <span className="version-pill">BUILD UI-1</span>
+        </div>
         <p className="subtitle">{modeLabel}</p>
 
         <div className="input-group">

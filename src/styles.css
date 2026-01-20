@@ -39,6 +39,17 @@ input {
   margin-bottom: 8px;
 }
 
+.version-pill {
+  display: inline-block;
+  margin: 8px auto 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
 .subtitle {
   text-align: center;
   color: #6b7280;
