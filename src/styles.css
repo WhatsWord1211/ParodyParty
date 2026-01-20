@@ -232,6 +232,12 @@ input {
   font-weight: 700;
 }
 
+.answers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
 .vote-badge {
   display: inline-flex;
   align-items: center;

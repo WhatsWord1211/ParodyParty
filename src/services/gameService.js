@@ -18,7 +18,6 @@ import { db } from './firebase';
  *   - hostId: string
  *   - phase: 'lobby' | 'prompt' | 'submission' | 'voting' | 'results'
  *   - round: number
- *   - maxRounds: number
  *   - currentPrompt: { promptId, title, prompt }
  *   - timerEndsAt: timestamp
  *   - players: {
@@ -122,7 +121,8 @@ export const startGame = async (gameId, prompt = null) => {
   const updateData = {
     phase: 'prompt',
     round: 1,
-    timerEndsAt: timerEndsAt.toISOString()
+    timerEndsAt: timerEndsAt.toISOString(),
+    maxRounds: deleteField()
   };
   
   if (prompt) {
@@ -242,6 +242,10 @@ export const calculateScores = async (gameId) => {
   const gameSnap = await getDoc(gameRef);
   const gameData = gameSnap.data();
   
+  if (gameData.scoredRound === gameData.round) {
+    return { gameOver: gameData.phase === 'gameOver', winnerIds: gameData.winnerIds || [] };
+  }
+
   const updates = {};
   let winnerIds = [];
 
@@ -250,7 +254,7 @@ export const calculateScores = async (gameId) => {
     const votes = player.votes || {};
     const points = Object.values(votes).reduce((sum, rank) => sum + (votePoints[rank] || 0), 0);
     const firstPlaceVotes = Object.values(votes).filter((rank) => rank === 1).length;
-    return { playerId, points, firstPlaceVotes };
+    return { playerId, points, firstPlaceVotes, answer: player.submission || 'No answer' };
   });
 
   // Sort for ranking: points desc, then first-place votes desc.
@@ -292,6 +296,19 @@ export const calculateScores = async (gameId) => {
     index = nextIndex;
   }
 
+  if (playerStats.length > 0) {
+    const topAnswerPoints = playerStats[0].points;
+    const topAnswers = playerStats.filter((stat) => stat.points === topAnswerPoints);
+    updates.roundResult = {
+      round: gameData.round,
+      topAnswerPoints,
+      topAnswers: topAnswers.map((stat) => ({
+        playerId: stat.playerId,
+        answer: stat.answer
+      }))
+    };
+  }
+
   const thresholdWinners = Object.keys(totalScores).filter((playerId) => totalScores[playerId] >= 10000);
   if (thresholdWinners.length > 0) {
     let topScore = Math.max(...thresholdWinners.map((id) => totalScores[id]));
@@ -307,6 +324,8 @@ export const calculateScores = async (gameId) => {
     updates.phase = 'gameOver';
     updates.winnerIds = winnerIds;
   }
+
+  updates.scoredRound = gameData.round;
   
   await updateDoc(gameRef, updates);
   return { gameOver: winnerIds.length > 0, winnerIds };
@@ -322,6 +341,7 @@ export const checkAndProgressToResults = async (gameId) => {
   
   // Only check if we're in voting phase
   if (gameData.phase !== 'voting') return;
+  if (gameData.scoredRound === gameData.round) return;
   
   const players = gameData.players || {};
   const playerIds = Object.keys(players);

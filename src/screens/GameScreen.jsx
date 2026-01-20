@@ -119,7 +119,6 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
           )}
           <h2>Round {gameData.round}</h2>
           <p className="subtitle">{isDisplayOnly ? 'Display screen' : 'Submit your answer'}</p>
-          {prompt?.prompt && <p className="subtitle">{prompt.prompt}</p>}
         </div>
 
         {gameData.phase === 'prompt' && prompt && (

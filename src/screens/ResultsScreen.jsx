@@ -98,9 +98,14 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   }, [gameData?.phase, timeRemaining, gameId]);
 
   const [shuffledAnswers, setShuffledAnswers] = useState([]);
+  const shuffleKeyRef = useRef(null);
 
   useEffect(() => {
     if (gameData?.phase === 'voting' && gameData.players) {
+      const shuffleKey = `${gameId}-${gameData.round}`;
+      if (shuffleKeyRef.current === shuffleKey && shuffledAnswers.length > 0) {
+        return;
+      }
       const players = Object.entries(gameData.players || {})
         .filter(([id]) => id !== playerId)
         .map(([id, player]) => ({
@@ -130,10 +135,12 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
       }
 
       setShuffledAnswers(shuffled);
+      shuffleKeyRef.current = shuffleKey;
     } else {
       setShuffledAnswers([]);
+      shuffleKeyRef.current = null;
     }
-  }, [gameData?.phase, gameData?.players, gameData?.round, gameId, playerId]);
+  }, [gameData?.phase, gameData?.round, gameId, playerId, shuffledAnswers.length, gameData?.players]);
 
   useEffect(() => {
     if (gameData?.phase === 'results') {
@@ -145,7 +152,8 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
           round: gameData.round + 1,
           timerEndsAt: timerEndsAt.toISOString(),
           currentPrompt: nextPrompt,
-          usedPrompts: [...usedPromptIds, nextPrompt.promptId]
+          usedPrompts: [...usedPromptIds, nextPrompt.promptId],
+          roundResult: null
         });
       }, 10000);
 
@@ -204,30 +212,40 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
             </div>
           </div>
 
-          {shuffledAnswers.map((item, index) => {
-            const rankIndex = rankedVotes.indexOf(item.playerId);
-            const rankLabel = rankIndex === -1 ? null : `#${rankIndex + 1}`;
-            return (
-            <div className="prompt-card" key={`${item.playerId}-${index}`}>
-              <div className="center">
-                <p>{item.answer}</p>
-                {rankLabel && <div className="vote-badge">{rankLabel}</div>}
-              </div>
-              {!hasVoted && !localSubmitted ? (
-                <div className="button-row">
-                  <button
-                    className={`button button-secondary ${rankLabel ? 'button-selected' : ''}`}
-                    onClick={() => handleRankPick(index)}
-                  >
-                    {rankLabel ? `Picked ${rankLabel}` : 'Pick'}
-                  </button>
+          {isDisplayOnly ? (
+            <div className="answers-grid">
+              {shuffledAnswers.map((item, index) => (
+                <div className="prompt-card" key={`${item.playerId}-${index}`}>
+                  <p className="center">{item.answer}</p>
                 </div>
-              ) : (
-                <p className="center">Thanks for voting!</p>
-              )}
+              ))}
             </div>
-          );
-          })}
+          ) : (
+            shuffledAnswers.map((item, index) => {
+              const rankIndex = rankedVotes.indexOf(item.playerId);
+              const rankLabel = rankIndex === -1 ? null : `#${rankIndex + 1}`;
+              return (
+              <div className="prompt-card" key={`${item.playerId}-${index}`}>
+                <div className="center">
+                  <p>{item.answer}</p>
+                  {rankLabel && <div className="vote-badge">{rankLabel}</div>}
+                </div>
+                {!hasVoted && !localSubmitted ? (
+                  <div className="button-row">
+                    <button
+                      className={`button button-secondary ${rankLabel ? 'button-selected' : ''}`}
+                      onClick={() => handleRankPick(index)}
+                    >
+                      {rankLabel ? `Picked ${rankLabel}` : 'Pick'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="center">Thanks for voting!</p>
+                )}
+              </div>
+            );
+            })
+          )}
 
           {!isDisplayOnly && !hasVoted && !localSubmitted && (
             <>
@@ -340,6 +358,20 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
         <div className="center">
           <h2>Round {gameData.round} Results</h2>
         </div>
+
+        {gameData.roundResult?.topAnswers?.length > 0 && (
+          <div className="prompt-card">
+            <h3>Top Answer</h3>
+            {gameData.roundResult.topAnswers.map((answer, index) => (
+              <div key={`${answer.playerId}-${index}`} className="center">
+                <p>{answer.answer}</p>
+                <p className="subtitle">
+                  {gameData.players?.[answer.playerId]?.name || 'Player'}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="score-banner">Race to 10,000 points</div>
 
