@@ -29,7 +29,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
             clearInterval(timerIntervalRef.current);
             timerIntervalRef.current = null;
           }
-          onNavigate('results', { gameId, playerId });
+          onNavigate('results', { gameId, playerId, isDisplayOnly });
         }
       }
     });
@@ -126,44 +126,44 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
             <h3>Prompt</h3>
             <p className="center">{prompt.prompt || 'Answer the prompt above.'}</p>
 
-            {!isDisplayOnly && !submitted && timeRemaining > 0 ? (
-              <div style={{ marginTop: 16 }}>
-                <input
-                  ref={inputRef}
-                  className="input"
-                  placeholder="Your answer..."
-                  value={answer}
-                  onChange={(event) => setAnswer(event.target.value)}
-                  onFocus={() => {
-                    setTimeout(() => {
-                      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 0);
-                  }}
-                  maxLength={50}
-                />
-                <button className="button button-primary" onClick={handleSubmit} disabled={!answer.trim()}>
-                  Submit
-                </button>
-              </div>
-            ) : isDisplayOnly ? (
-              <div className="center" style={{ marginTop: 16 }}>
-                <strong>Waiting for players to submit...</strong>
-              </div>
-            ) : submitted ? (
-              <div className="center" style={{ marginTop: 16 }}>
-                <strong>✓ Submitted!</strong>
-                <p>Waiting for other players...</p>
-              </div>
-            ) : (
-              <div className="center" style={{ marginTop: 16 }}>
-                <strong>You did not answer.</strong>
-              </div>
-            )}
+            {!isDisplayOnly && (
+              <>
+                {!submitted && timeRemaining > 0 ? (
+                  <div style={{ marginTop: 16 }}>
+                    <input
+                      ref={inputRef}
+                      className="input"
+                      placeholder="Your answer..."
+                      value={answer}
+                      onChange={(event) => setAnswer(event.target.value)}
+                      onFocus={() => {
+                        setTimeout(() => {
+                          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 0);
+                      }}
+                      maxLength={50}
+                    />
+                    <button className="button button-primary" onClick={handleSubmit} disabled={!answer.trim()}>
+                      Submit
+                    </button>
+                  </div>
+                ) : submitted ? (
+                  <div className="center" style={{ marginTop: 16 }}>
+                    <strong>✓ Submitted!</strong>
+                    <p>Waiting for other players...</p>
+                  </div>
+                ) : (
+                  <div className="center" style={{ marginTop: 16 }}>
+                    <strong>You did not answer.</strong>
+                  </div>
+                )}
 
-            {someDidNotAnswer && (
-              <p className="center" style={{ marginTop: 12 }}>
-                Some players did not answer.
-              </p>
+                {someDidNotAnswer && (
+                  <p className="center" style={{ marginTop: 12 }}>
+                    Some players did not answer.
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}

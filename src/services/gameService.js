@@ -4,6 +4,7 @@ import {
   getDoc,
   increment,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc
@@ -239,96 +240,102 @@ export const updateGamePhase = async (gameId, phase, additionalData = {}) => {
 
 export const calculateScores = async (gameId) => {
   const gameRef = doc(db, 'games', gameId);
-  const gameSnap = await getDoc(gameRef);
-  const gameData = gameSnap.data();
-  
-  if (gameData.scoredRound === gameData.round) {
-    return { gameOver: gameData.phase === 'gameOver', winnerIds: gameData.winnerIds || [] };
-  }
+  let result = { gameOver: false, winnerIds: [] };
 
-  const updates = {};
-  let winnerIds = [];
+  await runTransaction(db, async (transaction) => {
+    const gameSnap = await transaction.get(gameRef);
+    if (!gameSnap.exists()) return;
+    const gameData = gameSnap.data();
 
-  const votePoints = { 1: 5, 2: 3, 3: 1 };
-  const playerStats = Object.entries(gameData.players || {}).map(([playerId, player]) => {
-    const votes = player.votes || {};
-    const points = Object.values(votes).reduce((sum, rank) => sum + (votePoints[rank] || 0), 0);
-    const firstPlaceVotes = Object.values(votes).filter((rank) => rank === 1).length;
-    return { playerId, points, firstPlaceVotes, answer: player.submission || 'No answer' };
-  });
-
-  // Sort for ranking: points desc, then first-place votes desc.
-  playerStats.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    return b.firstPlaceVotes - a.firstPlaceVotes;
-  });
-
-  const rankScores = (rank) => Math.max(100, 1100 - rank * 100);
-  let rank = 1;
-  let index = 0;
-  const totalScores = {};
-
-  while (index < playerStats.length) {
-    const current = playerStats[index];
-    const tieGroup = [current];
-    let nextIndex = index + 1;
-
-    while (
-      nextIndex < playerStats.length &&
-      playerStats[nextIndex].points === current.points &&
-      playerStats[nextIndex].firstPlaceVotes === current.firstPlaceVotes
-    ) {
-      tieGroup.push(playerStats[nextIndex]);
-      nextIndex += 1;
+    if (gameData.scoredRound === gameData.round) {
+      result = { gameOver: gameData.phase === 'gameOver', winnerIds: gameData.winnerIds || [] };
+      return;
     }
 
-    const scoreForRank = rankScores(rank);
-    tieGroup.forEach((player) => {
-      const currentScore = gameData.players[player.playerId]?.score || 0;
-      totalScores[player.playerId] = currentScore + scoreForRank;
-      updates[`players.${player.playerId}.score`] = increment(scoreForRank);
-      updates[`players.${player.playerId}.totalFirstPlaceVotes`] = increment(player.firstPlaceVotes);
-      updates[`players.${player.playerId}.submission`] = null;
-      updates[`players.${player.playerId}.votes`] = null;
+    const updates = {};
+    let winnerIds = [];
+
+    const votePoints = { 1: 5, 2: 3, 3: 1 };
+    const playerStats = Object.entries(gameData.players || {}).map(([playerId, player]) => {
+      const votes = player.votes || {};
+      const points = Object.values(votes).reduce((sum, rank) => sum + (votePoints[rank] || 0), 0);
+      const firstPlaceVotes = Object.values(votes).filter((rank) => rank === 1).length;
+      return { playerId, points, firstPlaceVotes, answer: player.submission || 'No answer' };
     });
 
-    rank += tieGroup.length;
-    index = nextIndex;
-  }
-
-  if (playerStats.length > 0) {
-    const topAnswerPoints = playerStats[0].points;
-    const topAnswers = playerStats.filter((stat) => stat.points === topAnswerPoints);
-    updates.roundResult = {
-      round: gameData.round,
-      topAnswerPoints,
-      topAnswers: topAnswers.map((stat) => ({
-        playerId: stat.playerId,
-        answer: stat.answer
-      }))
-    };
-  }
-
-  const thresholdWinners = Object.keys(totalScores).filter((playerId) => totalScores[playerId] >= 10000);
-  if (thresholdWinners.length > 0) {
-    let topScore = Math.max(...thresholdWinners.map((id) => totalScores[id]));
-    const topScoreIds = thresholdWinners.filter((id) => totalScores[id] === topScore);
-    const totalFirstVotes = {};
-    topScoreIds.forEach((id) => {
-      const existingTotal = gameData.players[id]?.totalFirstPlaceVotes || 0;
-      const roundFirsts = playerStats.find((stat) => stat.playerId === id)?.firstPlaceVotes || 0;
-      totalFirstVotes[id] = existingTotal + roundFirsts;
+    playerStats.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      return b.firstPlaceVotes - a.firstPlaceVotes;
     });
-    const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVotes[id]));
-    winnerIds = topScoreIds.filter((id) => totalFirstVotes[id] === maxFirstVotes);
-    updates.phase = 'gameOver';
-    updates.winnerIds = winnerIds;
-  }
 
-  updates.scoredRound = gameData.round;
-  
-  await updateDoc(gameRef, updates);
-  return { gameOver: winnerIds.length > 0, winnerIds };
+    const rankScores = (rank) => Math.max(100, 1100 - rank * 100);
+    let rank = 1;
+    let index = 0;
+    const totalScores = {};
+
+    while (index < playerStats.length) {
+      const current = playerStats[index];
+      const tieGroup = [current];
+      let nextIndex = index + 1;
+
+      while (
+        nextIndex < playerStats.length &&
+        playerStats[nextIndex].points === current.points &&
+        playerStats[nextIndex].firstPlaceVotes === current.firstPlaceVotes
+      ) {
+        tieGroup.push(playerStats[nextIndex]);
+        nextIndex += 1;
+      }
+
+      const scoreForRank = rankScores(rank);
+      tieGroup.forEach((player) => {
+        const currentScore = gameData.players[player.playerId]?.score || 0;
+        totalScores[player.playerId] = currentScore + scoreForRank;
+        updates[`players.${player.playerId}.score`] = increment(scoreForRank);
+        updates[`players.${player.playerId}.totalFirstPlaceVotes`] = increment(player.firstPlaceVotes);
+        updates[`players.${player.playerId}.submission`] = null;
+        updates[`players.${player.playerId}.votes`] = null;
+      });
+
+      rank += tieGroup.length;
+      index = nextIndex;
+    }
+
+    if (playerStats.length > 0) {
+      const topAnswerPoints = playerStats[0].points;
+      const topAnswers = playerStats.filter((stat) => stat.points === topAnswerPoints);
+      updates.roundResult = {
+        round: gameData.round,
+        topAnswerPoints,
+        topAnswers: topAnswers.map((stat) => ({
+          playerId: stat.playerId,
+          answer: stat.answer
+        }))
+      };
+    }
+
+    const thresholdWinners = Object.keys(totalScores).filter((playerId) => totalScores[playerId] >= 10000);
+    if (thresholdWinners.length > 0) {
+      const topScore = Math.max(...thresholdWinners.map((id) => totalScores[id]));
+      const topScoreIds = thresholdWinners.filter((id) => totalScores[id] === topScore);
+      const totalFirstVotes = {};
+      topScoreIds.forEach((id) => {
+        const existingTotal = gameData.players[id]?.totalFirstPlaceVotes || 0;
+        const roundFirsts = playerStats.find((stat) => stat.playerId === id)?.firstPlaceVotes || 0;
+        totalFirstVotes[id] = existingTotal + roundFirsts;
+      });
+      const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVotes[id]));
+      winnerIds = topScoreIds.filter((id) => totalFirstVotes[id] === maxFirstVotes);
+      updates.phase = 'gameOver';
+      updates.winnerIds = winnerIds;
+    }
+
+    updates.scoredRound = gameData.round;
+    transaction.update(gameRef, updates);
+    result = { gameOver: winnerIds.length > 0, winnerIds };
+  });
+
+  return result;
 };
 
 export const checkAndProgressToResults = async (gameId) => {

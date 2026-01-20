@@ -29,20 +29,25 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
       if (data) {
         setGameData(data);
 
-        const allPlayers = Object.keys(data.players || {});
-        let voteCount = 0;
-        allPlayers.forEach((otherPlayerId) => {
-          if (otherPlayerId === playerId) return;
-          const otherPlayer = data.players[otherPlayerId];
-          if (otherPlayer?.votes && otherPlayer.votes[playerId] !== undefined) {
-            voteCount += 1;
+        if (!isDisplayOnly) {
+          const allPlayers = Object.keys(data.players || {});
+          let voteCount = 0;
+          allPlayers.forEach((otherPlayerId) => {
+            if (otherPlayerId === playerId) return;
+            const otherPlayer = data.players[otherPlayerId];
+            if (otherPlayer?.votes && otherPlayer.votes[playerId] !== undefined) {
+              voteCount += 1;
+            }
+          });
+          const voted = voteCount === 3;
+          setHasVoted(voted);
+          if (voted) {
+            setLocalSubmitted(true);
+            setStatusMessage('Your votes are submitted. Waiting on other players...');
           }
-        });
-        const voted = voteCount === 3;
-        setHasVoted(voted);
-        if (voted) {
-          setLocalSubmitted(true);
-          setStatusMessage('Your votes are submitted. Waiting on other players...');
+        } else {
+          setHasVoted(false);
+          setLocalSubmitted(false);
         }
 
         if (data.phase === 'voting') {
@@ -211,6 +216,13 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
               {timeRemaining > 0 ? formatTime(timeRemaining) : "Time's up!"}
             </div>
           </div>
+
+          {gameData.currentPrompt?.prompt && (
+            <div className="prompt-card">
+              <h3>Prompt</h3>
+              <p className="center">{gameData.currentPrompt.prompt}</p>
+            </div>
+          )}
 
           {isDisplayOnly ? (
             <div className="answers-grid">
