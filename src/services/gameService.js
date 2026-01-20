@@ -232,6 +232,7 @@ export const calculateScores = async (gameId) => {
   const gameData = gameSnap.data();
   
   const updates = {};
+  let winnerIds = [];
 
   const votePoints = { 1: 5, 2: 3, 3: 1 };
   const playerStats = Object.entries(gameData.players || {}).map(([playerId, player]) => {
@@ -291,7 +292,7 @@ export const calculateScores = async (gameId) => {
       totalFirstVotes[id] = existingTotal + roundFirsts;
     });
     const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVotes[id]));
-    const winnerIds = topScoreIds.filter((id) => totalFirstVotes[id] === maxFirstVotes);
+    winnerIds = topScoreIds.filter((id) => totalFirstVotes[id] === maxFirstVotes);
     updates.phase = 'gameOver';
     updates.winnerIds = winnerIds;
   }
