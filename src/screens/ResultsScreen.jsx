@@ -43,13 +43,12 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
           });
           const voted = voteCount === requiredCount;
           setHasVoted(voted);
-          if (voted) {
-            setLocalSubmitted(true);
-            setStatusMessage('Your votes are submitted. Waiting on other players...');
-          }
+          setLocalSubmitted(voted);
+          setStatusMessage(voted ? 'Your votes are submitted. Waiting on other players...' : '');
         } else {
           setHasVoted(false);
           setLocalSubmitted(false);
+          setStatusMessage('');
         }
 
         if (data.phase === 'voting') {
@@ -220,6 +219,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   if (gameData.phase === 'voting') {
     const playerCount = Object.keys(gameData.players || {}).length;
     const requiredCount = Math.min(3, Math.max(0, playerCount - 1));
+    const canVote = !isDisplayOnly && !hasVoted && !localSubmitted;
     return (
       <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
         <div className="card">
@@ -256,7 +256,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
                   <p>{item.answer}</p>
                   {rankLabel && <div className="vote-badge">{rankLabel}</div>}
                 </div>
-                {!hasVoted && !localSubmitted ? (
+                {canVote && (
                   <div className="button-row">
                     <button
                       className={`button button-secondary ${rankLabel ? 'button-selected' : ''}`}
@@ -265,15 +265,13 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
                       {rankLabel ? `Picked ${rankLabel}` : 'Pick'}
                     </button>
                   </div>
-                ) : (
-                  <p className="center">Thanks for voting!</p>
                 )}
               </div>
             );
             })
           )}
 
-          {!isDisplayOnly && !hasVoted && !localSubmitted && (
+          {!isDisplayOnly && canVote && (
             <>
               <div className="center" style={{ marginTop: 12 }}>
                 <p>
@@ -296,7 +294,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
             </>
           )}
 
-          {!isDisplayOnly && (hasVoted || localSubmitted) && (
+          {!isDisplayOnly && !canVote && (
             <p className="center">{statusMessage || 'Waiting for other players to vote...'}</p>
           )}
 
