@@ -111,7 +111,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
   };
 
   return (
-    <div className="page">
+    <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
       <div className="card">
         <div className="center">
           {gameData.phase === 'prompt' && (

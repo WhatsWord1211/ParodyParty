@@ -35,6 +35,11 @@ input {
   backdrop-filter: blur(10px);
 }
 
+.display-only .card {
+  width: min(1200px, 100%);
+  padding: 24px;
+}
+
 .title {
   font-size: 42px;
   font-weight: 800;
@@ -166,11 +171,20 @@ input {
   margin-bottom: 24px;
 }
 
+.display-only .lobby-header {
+  margin-bottom: 12px;
+}
+
 .game-code {
   font-size: 28px;
   font-weight: 700;
   letter-spacing: 6px;
   color: #4338ca;
+}
+
+.display-only .game-code {
+  font-size: 24px;
+  letter-spacing: 4px;
 }
 
 .players-list {
@@ -187,6 +201,18 @@ input {
   border-radius: 14px;
   background: #f8fafc;
   margin-bottom: 10px;
+}
+
+.display-only .players-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.display-only .players-list li {
+  padding: 10px;
+  margin-bottom: 0;
+  font-size: 14px;
 }
 
 .badge {
@@ -242,6 +268,11 @@ input {
   text-align: center;
 }
 
+.display-only .timer {
+  font-size: 20px;
+  margin: 6px 0;
+}
+
 .center {
   text-align: center;
 }
@@ -268,6 +299,21 @@ input {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
+}
+
+.display-only .answers-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.display-only .prompt-card {
+  padding: 12px;
+  margin-bottom: 0;
+}
+
+.display-only .prompt-card p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .vote-badge {

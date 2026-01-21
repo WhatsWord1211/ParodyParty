@@ -212,7 +212,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
     const playerCount = Object.keys(gameData.players || {}).length;
     const requiredCount = Math.min(3, Math.max(0, playerCount - 1));
     return (
-      <div className="page">
+      <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
         <div className="card">
           <div className="center">
             <h2>Round {gameData.round} - Vote for Answers</h2>

@@ -58,7 +58,7 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
   }));
 
   return (
-    <div className="page">
+    <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
       <div className="card">
         <div className="lobby-header">
           <h2>Game Lobby</h2>
