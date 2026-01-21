@@ -8,6 +8,7 @@ import {
   updateGamePhase
 } from '../services/gameService';
 import { getRandomPrompt } from '../utils/gameData';
+import { playRoundAudio, stopRoundAudio } from '../services/audioService';
 
 export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
@@ -67,6 +68,14 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
     return () => unsubscribe();
   }, [gameId, onNavigate, playerId]);
+
+  useEffect(() => {
+    if (gameData?.phase === 'voting') {
+      playRoundAudio('voting');
+    } else {
+      stopRoundAudio();
+    }
+  }, [gameData?.phase]);
 
   useEffect(() => {
     if (gameData?.phase === 'voting') {
@@ -161,7 +170,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
           usedPrompts: [...usedPromptIds, nextPrompt.promptId],
           roundResult: null
         });
-      }, 10000);
+      }, 15000);
 
       return () => clearTimeout(timer);
     }

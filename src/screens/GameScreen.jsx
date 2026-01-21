@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { subscribeToGame, submitAnswer, checkAndProgressToVoting } from '../services/gameService';
+import { playRoundAudio, stopRoundAudio } from '../services/audioService';
 
 export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
@@ -37,6 +38,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
 
     return () => {
       unsubscribe();
+      stopRoundAudio();
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
       }
@@ -46,6 +48,14 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
       }
     };
   }, [gameId, onNavigate, playerId]);
+
+  useEffect(() => {
+    if (gameData?.phase === 'prompt') {
+      playRoundAudio('prompt');
+    } else {
+      stopRoundAudio();
+    }
+  }, [gameData?.phase]);
 
   useEffect(() => {
     if (gameData?.phase === 'prompt' && gameData.timerEndsAt) {
