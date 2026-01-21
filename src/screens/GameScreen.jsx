@@ -8,6 +8,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerIntervalRef = useRef(null);
   const hasCheckedExpirationRef = useRef(false);
+  const promptTimeoutRef = useRef(null);
   const inputRef = useRef(null);
 
   const formatTime = (seconds) => {
@@ -39,6 +40,10 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
       }
+      if (promptTimeoutRef.current) {
+        clearTimeout(promptTimeoutRef.current);
+        promptTimeoutRef.current = null;
+      }
     };
   }, [gameId, onNavigate, playerId]);
 
@@ -60,10 +65,21 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
       checkTimer();
       timerIntervalRef.current = setInterval(checkTimer, 1000);
 
+      if (!promptTimeoutRef.current) {
+        const timeoutMs = Math.max(0, new Date(currentTimerEndsAt).getTime() - Date.now() + 250);
+        promptTimeoutRef.current = setTimeout(() => {
+          checkAndProgressToVoting(gameId).catch(console.error);
+        }, timeoutMs);
+      }
+
       return () => {
         if (timerIntervalRef.current) {
           clearInterval(timerIntervalRef.current);
           timerIntervalRef.current = null;
+        }
+        if (promptTimeoutRef.current) {
+          clearTimeout(promptTimeoutRef.current);
+          promptTimeoutRef.current = null;
         }
       };
     }
@@ -72,6 +88,10 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
+    }
+    if (promptTimeoutRef.current) {
+      clearTimeout(promptTimeoutRef.current);
+      promptTimeoutRef.current = null;
     }
   }, [gameData?.phase, gameData?.timerEndsAt, gameId]);
 
