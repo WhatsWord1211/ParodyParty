@@ -51,8 +51,7 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
     setLoading(true);
     setError('');
     try {
-      const userCredential = await signInAnonymously(auth);
-      const userId = userCredential.user.uid;
+      const userId = auth.currentUser?.uid || (await signInAnonymously(auth)).user.uid;
       const hostName = isDisplayOnly ? 'Host Screen' : playerName.trim();
       const gameId = await createGame(userId, hostName, { hostIsPlayer: !isDisplayOnly });
       onNavigate('lobby', { gameId, playerId: userId, isHost: true, isDisplayOnly });
@@ -76,11 +75,16 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
     setLoading(true);
     setError('');
     try {
-      const userCredential = await signInAnonymously(auth);
-      const userId = userCredential.user.uid;
+      const userId = auth.currentUser?.uid || (await signInAnonymously(auth)).user.uid;
       const normalizedCode = gameCode.trim().toUpperCase();
-      await joinGame(normalizedCode, userId, playerName.trim());
-      onNavigate('lobby', { gameId: normalizedCode, playerId: userId, isHost: false });
+      const gameData = await joinGame(normalizedCode, userId, playerName.trim());
+      if (gameData.phase === 'prompt') {
+        onNavigate('game', { gameId: normalizedCode, playerId: userId, isDisplayOnly: false });
+      } else if (gameData.phase === 'voting' || gameData.phase === 'results' || gameData.phase === 'gameOver') {
+        onNavigate('results', { gameId: normalizedCode, playerId: userId, isDisplayOnly: false });
+      } else {
+        onNavigate('lobby', { gameId: normalizedCode, playerId: userId, isHost: false });
+      }
     } catch (error) {
       setError(error.message || 'Failed to join game.');
     } finally {

@@ -31,6 +31,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
         if (!isDisplayOnly) {
           const allPlayers = Object.keys(data.players || {});
+          const requiredCount = Math.min(3, Math.max(0, allPlayers.length - 1));
           let voteCount = 0;
           allPlayers.forEach((otherPlayerId) => {
             if (otherPlayerId === playerId) return;
@@ -39,7 +40,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
               voteCount += 1;
             }
           });
-          const voted = voteCount === 3;
+          const voted = voteCount === requiredCount;
           setHasVoted(voted);
           if (voted) {
             setLocalSubmitted(true);
@@ -183,9 +184,11 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   const handleSubmitVotes = async () => {
     if (hasVoted || localSubmitted) return;
     const rankedPlayerIds = rankedVotes;
-    if (rankedPlayerIds.length !== 3) return;
+    const playerCount = Object.keys(gameData?.players || {}).length;
+    const requiredCount = Math.min(3, Math.max(0, playerCount - 1));
+    if (rankedPlayerIds.length !== requiredCount) return;
     try {
-      await submitVotes(gameId, playerId, rankedPlayerIds);
+      await submitVotes(gameId, playerId, rankedPlayerIds, requiredCount);
       setLocalSubmitted(true);
       setStatusMessage('Your votes are submitted. Waiting on other players...');
       setTimeout(() => {
@@ -206,12 +209,14 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   }
 
   if (gameData.phase === 'voting') {
+    const playerCount = Object.keys(gameData.players || {}).length;
+    const requiredCount = Math.min(3, Math.max(0, playerCount - 1));
     return (
       <div className="page">
         <div className="card">
           <div className="center">
             <h2>Round {gameData.round} - Vote for Answers</h2>
-            <p className="subtitle">Pick your top 3 favorites.</p>
+            <p className="subtitle">Pick your top {requiredCount} favorites.</p>
             <div className="timer">
               {timeRemaining > 0 ? formatTime(timeRemaining) : "Time's up!"}
             </div>
@@ -263,16 +268,21 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
             <>
               <div className="center" style={{ marginTop: 12 }}>
                 <p>
-                  Your picks: #{rankedVotes[0] ? '1' : '_'} #{rankedVotes[1] ? '2' : '_'} #
-                  {rankedVotes[2] ? '3' : '_'}
+                  Your picks:
+                  {Array.from({ length: requiredCount }).map((_, index) => (
+                    <span key={index}>
+                      {' '}
+                      #{rankedVotes[index] ? index + 1 : '_'}
+                    </span>
+                  ))}
                 </p>
               </div>
               <button
                 className="button button-primary"
                 onClick={handleSubmitVotes}
-                disabled={rankedVotes.length !== 3}
+                disabled={rankedVotes.length !== requiredCount}
               >
-                Submit Top 3
+                Submit Top {requiredCount}
               </button>
             </>
           )}

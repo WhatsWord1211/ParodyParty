@@ -88,6 +88,14 @@ export const joinGame = async (gameId, playerId, playerName) => {
   }
   
   const gameData = gameSnap.data();
+
+  // Allow rejoin if player already exists.
+  if (gameData.players?.[playerId]) {
+    await updateDoc(gameRef, {
+      [`players.${playerId}.connected`]: true
+    });
+    return gameData;
+  }
   
   if (gameData.phase !== 'lobby') {
     throw new Error('Game has already started');
@@ -184,7 +192,7 @@ export const submitAnswer = async (gameId, playerId, answer) => {
   });
 };
 
-export const submitVotes = async (gameId, voterId, rankedPlayerIds) => {
+export const submitVotes = async (gameId, voterId, rankedPlayerIds, requiredCount = 3) => {
   const gameRef = doc(db, 'games', gameId);
   const gameSnap = await getDoc(gameRef);
   if (!gameSnap.exists()) {
@@ -192,8 +200,8 @@ export const submitVotes = async (gameId, voterId, rankedPlayerIds) => {
   }
 
   const uniqueIds = new Set(rankedPlayerIds.filter(Boolean));
-  if (uniqueIds.size !== 3) {
-    throw new Error('You must pick three different answers.');
+  if (uniqueIds.size !== requiredCount) {
+    throw new Error(`You must pick ${requiredCount} different answers.`);
   }
   if (uniqueIds.has(voterId)) {
     throw new Error('You cannot vote for your own answer.');
@@ -271,6 +279,7 @@ export const calculateScores = async (gameId) => {
     let rank = 1;
     let index = 0;
     const totalScores = {};
+    const totalFirstVoteTotals = {};
 
     while (index < playerStats.length) {
       const current = playerStats[index];
@@ -289,7 +298,9 @@ export const calculateScores = async (gameId) => {
       const scoreForRank = rankScores(rank);
       tieGroup.forEach((player) => {
         const currentScore = gameData.players[player.playerId]?.score || 0;
+        const currentFirstVotes = gameData.players[player.playerId]?.totalFirstPlaceVotes || 0;
         totalScores[player.playerId] = currentScore + scoreForRank;
+        totalFirstVoteTotals[player.playerId] = currentFirstVotes + player.firstPlaceVotes;
         updates[`players.${player.playerId}.score`] = increment(scoreForRank);
         updates[`players.${player.playerId}.totalFirstPlaceVotes`] = increment(player.firstPlaceVotes);
         updates[`players.${player.playerId}.submission`] = null;
@@ -317,14 +328,18 @@ export const calculateScores = async (gameId) => {
     if (thresholdWinners.length > 0) {
       const topScore = Math.max(...thresholdWinners.map((id) => totalScores[id]));
       const topScoreIds = thresholdWinners.filter((id) => totalScores[id] === topScore);
-      const totalFirstVotes = {};
-      topScoreIds.forEach((id) => {
-        const existingTotal = gameData.players[id]?.totalFirstPlaceVotes || 0;
-        const roundFirsts = playerStats.find((stat) => stat.playerId === id)?.firstPlaceVotes || 0;
-        totalFirstVotes[id] = existingTotal + roundFirsts;
-      });
-      const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVotes[id]));
-      winnerIds = topScoreIds.filter((id) => totalFirstVotes[id] === maxFirstVotes);
+      const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVoteTotals[id] || 0));
+      winnerIds = topScoreIds.filter((id) => (totalFirstVoteTotals[id] || 0) === maxFirstVotes);
+      updates.phase = 'gameOver';
+      updates.winnerIds = winnerIds;
+    }
+
+    const playerCount = Object.keys(gameData.players || {}).length;
+    if (playerCount < 4 && winnerIds.length === 0) {
+      const topScore = Math.max(...Object.values(totalScores));
+      const topScoreIds = Object.keys(totalScores).filter((id) => totalScores[id] === topScore);
+      const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVoteTotals[id] || 0));
+      winnerIds = topScoreIds.filter((id) => (totalFirstVoteTotals[id] || 0) === maxFirstVotes);
       updates.phase = 'gameOver';
       updates.winnerIds = winnerIds;
     }
@@ -353,6 +368,7 @@ export const checkAndProgressToResults = async (gameId) => {
   const playerIds = Object.keys(players);
   
   // Each voter must submit exactly 3 ranked votes.
+  const requiredCount = Math.min(3, Math.max(0, playerIds.length - 1));
   const allVoted = playerIds.every((voterId) => {
     let voteCount = 0;
     playerIds.forEach((playerId) => {
@@ -362,7 +378,7 @@ export const checkAndProgressToResults = async (gameId) => {
         voteCount += 1;
       }
     });
-    return voteCount === 3;
+    return voteCount === requiredCount;
   });
   
   // If all players voted, calculate scores and move to results phase
