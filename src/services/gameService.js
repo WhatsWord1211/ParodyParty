@@ -94,7 +94,8 @@ export const joinGame = async (gameId, playerId, playerName) => {
     await updateDoc(gameRef, {
       [`players.${playerId}.connected`]: true
     });
-    return gameData;
+    const refreshedSnap = await getDoc(gameRef);
+    return refreshedSnap.exists() ? refreshedSnap.data() : gameData;
   }
   
   if (gameData.phase !== 'lobby') {
@@ -118,7 +119,8 @@ export const joinGame = async (gameId, playerId, playerName) => {
     }
   });
 
-  return gameData;
+  const refreshedSnap = await getDoc(gameRef);
+  return refreshedSnap.exists() ? refreshedSnap.data() : gameData;
 };
 
 export const startGame = async (gameId, prompt = null) => {
@@ -167,7 +169,7 @@ export const checkAndProgressToVoting = async (gameId) => {
       // Double-check phase hasn't changed (prevent race conditions)
       const currentSnap = await getDoc(gameRef);
       if (currentSnap.exists() && currentSnap.data().phase === 'prompt') {
-        const votingEndsAt = new Date(Date.now() + 120000);
+        const votingEndsAt = new Date(Date.now() + 90000);
         const updates = { phase: 'voting', timerEndsAt: votingEndsAt.toISOString() };
 
         // Fill in missing submissions so voting can proceed.

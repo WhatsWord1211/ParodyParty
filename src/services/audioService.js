@@ -1,6 +1,6 @@
 const audioSources = {
-  prompt: '/assets/audio/prompt-round.mp3',
-  voting: '/assets/audio/voting-round.mp3'
+  prompt: '/audio/prompt-round.mp3',
+  voting: '/audio/voting-round.mp3'
 };
 
 let currentAudio = null;
