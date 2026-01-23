@@ -28,7 +28,13 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   const timerIntervalRef = useRef(null);
   const hasRequestedResultsRef = useRef(false);
   const connectedPlayerIds = getConnectedPlayerIds(gameData?.players);
-  const requiredVoteCount = getRequiredVoteCount(connectedPlayerIds.length);
+  const votingPlayerIds = Array.isArray(gameData?.votingPlayerIds)
+    ? gameData.votingPlayerIds
+    : connectedPlayerIds;
+  const requiredVoteCount =
+    typeof gameData?.votingRequiredCount === 'number'
+      ? gameData.votingRequiredCount
+      : getRequiredVoteCount(votingPlayerIds.length);
   const { soundEnabled, setSoundEnabled, hasInitialized } = useSoundPreference({
     gameId,
     hostIsDisplayOnly: gameData?.hostIsDisplayOnly,
@@ -42,13 +48,25 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const requestResultsProgress = (source) => {
+    if (hasRequestedResultsRef.current) return;
+    hasRequestedResultsRef.current = true;
+    checkAndProgressToResults(gameId).catch((error) => {
+      console.error(`Failed to progress results from ${source}:`, error);
+      hasRequestedResultsRef.current = false;
+    });
+  };
+
   useEffect(() => {
     const unsubscribe = subscribeToGame(gameId, (data) => {
       if (data) {
         setGameData(data);
 
         if (!isDisplayOnly) {
-          const requiredCount = getRequiredVoteCount(getConnectedPlayerIds(data.players).length);
+          const requiredCount =
+            typeof data.votingRequiredCount === 'number'
+              ? data.votingRequiredCount
+              : getRequiredVoteCount(getConnectedPlayerIds(data.players).length);
           const voted = hasVoterCompletedBallot(data.players, playerId, requiredCount);
           setHasVoted(voted);
           setLocalSubmitted(voted);
@@ -116,24 +134,20 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
   useEffect(() => {
     if (gameData?.phase === 'voting' && timeRemaining === 0) {
-      if (!hasRequestedResultsRef.current) {
-        hasRequestedResultsRef.current = true;
-        checkAndProgressToResults(gameId).catch(console.error);
-      }
+      requestResultsProgress('timer');
     }
   }, [gameData?.phase, timeRemaining, gameId]);
 
   useEffect(() => {
     if (gameData?.phase !== 'voting' || !gameData?.players) return;
-    const playerIds = getConnectedPlayerIds(gameData.players);
+    const playerIds = votingPlayerIds;
     const allVoted = playerIds.every((voterId) =>
       hasVoterCompletedBallot(gameData.players, voterId, requiredVoteCount)
     );
     if (allVoted && !hasRequestedResultsRef.current) {
-      hasRequestedResultsRef.current = true;
-      checkAndProgressToResults(gameId).catch(console.error);
+      requestResultsProgress('all-voted');
     }
-  }, [gameData?.phase, gameData?.players, gameId, requiredVoteCount]);
+  }, [gameData?.phase, gameData?.players, gameId, requiredVoteCount, votingPlayerIds]);
 
   const [shuffledAnswers, setShuffledAnswers] = useState([]);
   const shuffleKeyRef = useRef(null);
@@ -145,7 +159,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
         return;
       }
       const players = Object.entries(gameData.players || {})
-        .filter(([id, player]) => id !== playerId && player?.connected !== false)
+        .filter(([id, player]) => id !== playerId && votingPlayerIds.includes(id))
         .map(([id, player]) => ({
           playerId: id,
           answer: player.submission || 'No answer',
@@ -191,7 +205,9 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
           timerEndsAt: timerEndsAt.toISOString(),
           currentPrompt: nextPrompt,
           usedPrompts: [...usedPromptIds, nextPrompt.promptId],
-          roundResult: null
+          roundResult: null,
+          votingPlayerIds: null,
+          votingRequiredCount: null
         });
       }, RESULTS_DURATION_MS);
 
@@ -216,17 +232,17 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   const handleSubmitVotes = async () => {
     if (hasVoted || localSubmitted) return;
     const rankedPlayerIds = rankedVotes;
-    if (rankedPlayerIds.length !== requiredVoteCount) return;
+    if (rankedPlayerIds.length !== requiredVoteCount) {
+      setStatusMessage(`Pick ${requiredVoteCount} different answers before submitting.`);
+      return;
+    }
     try {
       await submitVotes(gameId, playerId, rankedPlayerIds, requiredVoteCount);
       setLocalSubmitted(true);
       setStatusMessage('Your votes are submitted. Waiting on other players...');
-      if (!hasRequestedResultsRef.current) {
-        hasRequestedResultsRef.current = true;
-        setTimeout(() => {
-          checkAndProgressToResults(gameId).catch(console.error);
-        }, 100);
-      }
+      setTimeout(() => {
+        requestResultsProgress('submit');
+      }, 100);
     } catch (error) {
       console.error('Failed to submit votes:', error);
       setStatusMessage(error.message || 'Failed to submit votes.');
@@ -242,7 +258,11 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   }
 
   if (gameData.phase === 'voting') {
-    const canVote = !isDisplayOnly && !hasVoted && !localSubmitted;
+    const canVote =
+      !isDisplayOnly &&
+      !hasVoted &&
+      !localSubmitted &&
+      votingPlayerIds.includes(playerId);
     return (
       <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
         <div className="card">
@@ -301,6 +321,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
           {!isDisplayOnly && canVote && (
             <>
+              {statusMessage && <p className="center">{statusMessage}</p>}
               <div className="center" style={{ marginTop: 12 }}>
                 <p>
                   Your picks:

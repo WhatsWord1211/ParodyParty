@@ -27,6 +27,15 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const requestVotingProgress = (source) => {
+    if (hasRequestedVotingRef.current) return;
+    hasRequestedVotingRef.current = true;
+    checkAndProgressToVoting(gameId).catch((error) => {
+      console.error(`Failed to progress voting from ${source}:`, error);
+      hasRequestedVotingRef.current = false;
+    });
+  };
+
   useEffect(() => {
     const unsubscribe = subscribeToGame(gameId, (data) => {
       if (data) {
@@ -81,10 +90,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
 
         if (remaining === 0 && !hasCheckedExpirationRef.current) {
           hasCheckedExpirationRef.current = true;
-          if (!hasRequestedVotingRef.current) {
-            hasRequestedVotingRef.current = true;
-            checkAndProgressToVoting(gameId).catch(console.error);
-          }
+          requestVotingProgress('timer');
         }
       };
 
@@ -94,10 +100,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
       if (!promptTimeoutRef.current) {
         const timeoutMs = Math.max(0, new Date(currentTimerEndsAt).getTime() - Date.now() + 250);
         promptTimeoutRef.current = setTimeout(() => {
-          if (!hasRequestedVotingRef.current) {
-            hasRequestedVotingRef.current = true;
-            checkAndProgressToVoting(gameId).catch(console.error);
-          }
+          requestVotingProgress('timeout');
         }, timeoutMs);
       }
 
@@ -130,12 +133,9 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
       const players = Object.values(gameData.players).filter((player) => player?.connected !== false);
       const allSubmitted = players.every((player) => player.submission !== null);
       if (allSubmitted) {
-        if (!hasRequestedVotingRef.current) {
-          hasRequestedVotingRef.current = true;
-          setTimeout(() => {
-            checkAndProgressToVoting(gameId).catch(console.error);
-          }, 100);
-        }
+        setTimeout(() => {
+          requestVotingProgress('all-submitted');
+        }, 100);
       }
     }
   }, [gameData?.phase, gameData?.players, gameId]);
@@ -157,10 +157,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
     try {
       await submitAnswer(gameId, playerId, answer.trim());
       setSubmitted(true);
-      if (!hasRequestedVotingRef.current) {
-        hasRequestedVotingRef.current = true;
-        checkAndProgressToVoting(gameId).catch(console.error);
-      }
+      requestVotingProgress('submit');
     } catch (error) {
       console.error('Failed to submit answer:', error);
     }

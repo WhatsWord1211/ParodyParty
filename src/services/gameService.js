@@ -32,6 +32,8 @@ import {
  *   - hostId: string
  *   - hostIsDisplayOnly: boolean
  *   - phase: 'lobby' | 'prompt' | 'submission' | 'voting' | 'results'
+ *   - votingPlayerIds: string[] | null
+ *   - votingRequiredCount: number | null
  *   - gameOverReason: 'not_enough_players' | null
  *   - round: number
  *   - currentPrompt: { promptId, title, prompt }
@@ -224,7 +226,13 @@ export const checkAndProgressToVoting = async (gameId) => {
       if (!allSubmitted && !timerExpired) return;
 
       const votingEndsAt = new Date(Date.now() + VOTING_DURATION_MS);
-      const updates = { phase: 'voting', timerEndsAt: votingEndsAt.toISOString() };
+      const votingRequiredCount = getRequiredVoteCount(playerIds.length);
+      const updates = {
+        phase: 'voting',
+        timerEndsAt: votingEndsAt.toISOString(),
+        votingPlayerIds: playerIds,
+        votingRequiredCount
+      };
 
       playerIds.forEach((playerId) => {
         const player = players[playerId];
@@ -254,11 +262,20 @@ export const submitVotes = async (gameId, voterId, rankedPlayerIds, requiredCoun
     throw new Error('Game not found');
   }
 
-  const connectedPlayerIds = getConnectedPlayerIds(gameData.players || {});
-  const computedRequiredCount = getRequiredVoteCount(connectedPlayerIds.length);
+  const votingPlayerIds = Array.isArray(gameData.votingPlayerIds)
+    ? gameData.votingPlayerIds
+    : getConnectedPlayerIds(gameData.players || {});
+  const computedRequiredCount =
+    typeof gameData.votingRequiredCount === 'number'
+      ? gameData.votingRequiredCount
+      : getRequiredVoteCount(votingPlayerIds.length);
   const uniqueIds = new Set(rankedPlayerIds.filter(Boolean));
   if (uniqueIds.size !== computedRequiredCount) {
     throw new Error(`You must pick ${computedRequiredCount} different answers.`);
+  }
+  const invalidVote = Array.from(uniqueIds).some((playerId) => !votingPlayerIds.includes(playerId));
+  if (invalidVote) {
+    throw new Error('You can only vote for current answers.');
   }
   if (uniqueIds.has(voterId)) {
     throw new Error('You cannot vote for your own answer.');
@@ -439,8 +456,14 @@ export const checkAndProgressToResults = async (gameId) => {
     }
     return;
   }
-  const requiredCount = getRequiredVoteCount(connectedPlayerIds.length);
-  const allVoted = connectedPlayerIds.every((voterId) =>
+  const votingPlayerIds = Array.isArray(gameData.votingPlayerIds)
+    ? gameData.votingPlayerIds
+    : connectedPlayerIds;
+  const requiredCount =
+    typeof gameData.votingRequiredCount === 'number'
+      ? gameData.votingRequiredCount
+      : getRequiredVoteCount(votingPlayerIds.length);
+  const allVoted = votingPlayerIds.every((voterId) =>
     hasVoterCompletedBallot(players, voterId, requiredCount)
   );
   
@@ -480,7 +503,9 @@ export const resetGame = async (gameId) => {
     currentPrompt: null,
     usedPrompts: [],
     winnerIds: deleteField(),
-    gameOverReason: deleteField()
+    gameOverReason: deleteField(),
+    votingPlayerIds: deleteField(),
+    votingRequiredCount: deleteField()
   };
 
   Object.keys(gameData.players || {}).forEach((playerId) => {
