@@ -9,6 +9,10 @@ import {
 } from '../services/gameService';
 import { getRandomPrompt } from '../utils/gameData';
 import { playRoundAudio, stopRoundAudio } from '../services/audioService';
+import SoundToggle from '../components/SoundToggle';
+import useSoundPreference from '../hooks/useSoundPreference';
+import { PROMPT_DURATION_MS, RESULTS_DURATION_MS } from '../constants/gameSettings';
+import { getRequiredVoteCount, hasVoterCompletedBallot } from '../utils/voteUtils';
 
 export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
@@ -18,6 +22,14 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   const [statusMessage, setStatusMessage] = useState('');
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerIntervalRef = useRef(null);
+  const hasRequestedResultsRef = useRef(false);
+  const requiredVoteCount = getRequiredVoteCount(Object.keys(gameData?.players || {}).length);
+  const { soundEnabled, setSoundEnabled, hasInitialized } = useSoundPreference({
+    gameId,
+    hostIsDisplayOnly: gameData?.hostIsDisplayOnly,
+    isDisplayOnly,
+    isReady: Boolean(gameData)
+  });
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -31,17 +43,8 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
         setGameData(data);
 
         if (!isDisplayOnly) {
-          const allPlayers = Object.keys(data.players || {});
-          const requiredCount = Math.min(3, Math.max(0, allPlayers.length - 1));
-          let voteCount = 0;
-          allPlayers.forEach((otherPlayerId) => {
-            if (otherPlayerId === playerId) return;
-            const otherPlayer = data.players[otherPlayerId];
-            if (otherPlayer?.votes && otherPlayer.votes[playerId] !== undefined) {
-              voteCount += 1;
-            }
-          });
-          const voted = voteCount === requiredCount;
+          const requiredCount = getRequiredVoteCount(Object.keys(data.players || {}).length);
+          const voted = hasVoterCompletedBallot(data.players, playerId, requiredCount);
           setHasVoted(voted);
           setLocalSubmitted(voted);
           setStatusMessage(voted ? 'Your votes are submitted. Waiting on other players...' : '');
@@ -49,10 +52,6 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
           setHasVoted(false);
           setLocalSubmitted(false);
           setStatusMessage('');
-        }
-
-        if (data.phase === 'voting') {
-          checkAndProgressToResults(gameId).catch(console.error);
         }
 
         if (data.phase === 'prompt' && data.round > 1) {
@@ -69,12 +68,13 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   }, [gameId, onNavigate, playerId]);
 
   useEffect(() => {
-    if (gameData?.phase === 'voting') {
+    if (!hasInitialized) return;
+    if (gameData?.phase === 'voting' && soundEnabled) {
       playRoundAudio('voting');
     } else {
       stopRoundAudio();
     }
-  }, [gameData?.phase]);
+  }, [gameData?.phase, soundEnabled, hasInitialized]);
 
   useEffect(() => {
     if (gameData?.phase === 'voting') {
@@ -82,6 +82,10 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
       setStatusMessage('');
       setRankedVotes([]);
     }
+  }, [gameData?.phase]);
+
+  useEffect(() => {
+    hasRequestedResultsRef.current = false;
   }, [gameData?.phase]);
 
   useEffect(() => {
@@ -107,9 +111,24 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
   useEffect(() => {
     if (gameData?.phase === 'voting' && timeRemaining === 0) {
-      checkAndProgressToResults(gameId).catch(console.error);
+      if (!hasRequestedResultsRef.current) {
+        hasRequestedResultsRef.current = true;
+        checkAndProgressToResults(gameId).catch(console.error);
+      }
     }
   }, [gameData?.phase, timeRemaining, gameId]);
+
+  useEffect(() => {
+    if (gameData?.phase !== 'voting' || !gameData?.players) return;
+    const playerIds = Object.keys(gameData.players);
+    const allVoted = playerIds.every((voterId) =>
+      hasVoterCompletedBallot(gameData.players, voterId, requiredVoteCount)
+    );
+    if (allVoted && !hasRequestedResultsRef.current) {
+      hasRequestedResultsRef.current = true;
+      checkAndProgressToResults(gameId).catch(console.error);
+    }
+  }, [gameData?.phase, gameData?.players, gameId, requiredVoteCount]);
 
   const [shuffledAnswers, setShuffledAnswers] = useState([]);
   const shuffleKeyRef = useRef(null);
@@ -161,7 +180,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
       const timer = setTimeout(async () => {
         const usedPromptIds = gameData.usedPrompts || [];
         const nextPrompt = getRandomPrompt(null, usedPromptIds);
-        const timerEndsAt = new Date(Date.now() + 90000);
+        const timerEndsAt = new Date(Date.now() + PROMPT_DURATION_MS);
         await updateGamePhase(gameId, 'prompt', {
           round: gameData.round + 1,
           timerEndsAt: timerEndsAt.toISOString(),
@@ -169,7 +188,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
           usedPrompts: [...usedPromptIds, nextPrompt.promptId],
           roundResult: null
         });
-      }, 15000);
+      }, RESULTS_DURATION_MS);
 
       return () => clearTimeout(timer);
     }
@@ -182,7 +201,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
       if (prev.includes(votedPlayerId)) {
         return prev.filter((id) => id !== votedPlayerId);
       }
-      if (prev.length >= 3) {
+      if (prev.length >= requiredVoteCount) {
         return prev;
       }
       return [...prev, votedPlayerId];
@@ -192,16 +211,17 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   const handleSubmitVotes = async () => {
     if (hasVoted || localSubmitted) return;
     const rankedPlayerIds = rankedVotes;
-    const playerCount = Object.keys(gameData?.players || {}).length;
-    const requiredCount = Math.min(3, Math.max(0, playerCount - 1));
-    if (rankedPlayerIds.length !== requiredCount) return;
+    if (rankedPlayerIds.length !== requiredVoteCount) return;
     try {
-      await submitVotes(gameId, playerId, rankedPlayerIds, requiredCount);
+      await submitVotes(gameId, playerId, rankedPlayerIds, requiredVoteCount);
       setLocalSubmitted(true);
       setStatusMessage('Your votes are submitted. Waiting on other players...');
-      setTimeout(() => {
-        checkAndProgressToResults(gameId).catch(console.error);
-      }, 100);
+      if (!hasRequestedResultsRef.current) {
+        hasRequestedResultsRef.current = true;
+        setTimeout(() => {
+          checkAndProgressToResults(gameId).catch(console.error);
+        }, 100);
+      }
     } catch (error) {
       console.error('Failed to submit votes:', error);
       setStatusMessage(error.message || 'Failed to submit votes.');
@@ -217,15 +237,18 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   }
 
   if (gameData.phase === 'voting') {
-    const playerCount = Object.keys(gameData.players || {}).length;
-    const requiredCount = Math.min(3, Math.max(0, playerCount - 1));
     const canVote = !isDisplayOnly && !hasVoted && !localSubmitted;
     return (
       <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
         <div className="card">
+          <SoundToggle
+            soundEnabled={soundEnabled}
+            onToggle={() => setSoundEnabled((prev) => !prev)}
+            disabled={!hasInitialized}
+          />
           <div className="center">
             <h2>Round {gameData.round} - Vote for Answers</h2>
-            <p className="subtitle">Pick your top {requiredCount} favorites.</p>
+            <p className="subtitle">Pick your top {requiredVoteCount} favorites.</p>
             <div className="timer">
               {timeRemaining > 0 ? formatTime(timeRemaining) : "Time's up!"}
             </div>
@@ -276,7 +299,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
               <div className="center" style={{ marginTop: 12 }}>
                 <p>
                   Your picks:
-                  {Array.from({ length: requiredCount }).map((_, index) => (
+                  {Array.from({ length: requiredVoteCount }).map((_, index) => (
                     <span key={index}>
                       {' '}
                       #{rankedVotes[index] ? index + 1 : '_'}
@@ -287,9 +310,9 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
               <button
                 className="button button-primary"
                 onClick={handleSubmitVotes}
-                disabled={rankedVotes.length !== requiredCount}
+                disabled={rankedVotes.length !== requiredVoteCount}
               >
-                Submit Top {requiredCount}
+                Submit Top {requiredVoteCount}
               </button>
             </>
           )}
@@ -323,6 +346,11 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
     return (
       <div className="page">
         <div className="card">
+          <SoundToggle
+            soundEnabled={soundEnabled}
+            onToggle={() => setSoundEnabled((prev) => !prev)}
+            disabled={!hasInitialized}
+          />
           <div className="center">
             <h2>Game Over</h2>
             {winners.length > 0 && (
@@ -384,6 +412,11 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   return (
     <div className="page">
       <div className="card">
+        <SoundToggle
+          soundEnabled={soundEnabled}
+          onToggle={() => setSoundEnabled((prev) => !prev)}
+          disabled={!hasInitialized}
+        />
         <div className="center">
           <h2>Round {gameData.round} Results</h2>
         </div>

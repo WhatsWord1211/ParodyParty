@@ -33,6 +33,7 @@ input {
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
   border: 1px solid rgba(148, 163, 184, 0.2);
   backdrop-filter: blur(10px);
+  position: relative;
 }
 
 .display-only .card {
@@ -102,6 +103,42 @@ input {
   background: #ffffff;
   border: 2px solid #e2e8f0;
   color: #475569;
+}
+
+.sound-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.15s ease, opacity 0.15s ease;
+  z-index: 1;
+}
+
+.sound-toggle:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+
+.sound-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sound-toggle-off {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.display-only .sound-toggle {
+  top: 12px;
+  right: 12px;
 }
 
 .button-row {

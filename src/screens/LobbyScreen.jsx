@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { subscribeToGame, startGame } from '../services/gameService';
 import { getRandomPrompt } from '../utils/gameData';
 import { QRCodeCanvas } from 'qrcode.react';
+import SoundToggle from '../components/SoundToggle';
+import useSoundPreference from '../hooks/useSoundPreference';
+import { MAX_PLAYERS, MIN_PLAYERS } from '../constants/gameSettings';
 
 export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
@@ -9,6 +12,12 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState('info');
   const joinUrl = useMemo(() => `${window.location.origin}?code=${gameId}`, [gameId]);
+  const { soundEnabled, setSoundEnabled, hasInitialized } = useSoundPreference({
+    gameId,
+    hostIsDisplayOnly: gameData?.hostIsDisplayOnly,
+    isDisplayOnly,
+    isReady: Boolean(gameData)
+  });
 
   useEffect(() => {
     const unsubscribe = subscribeToGame(gameId, (data) => {
@@ -25,8 +34,8 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
   const handleStartGame = async () => {
     if (!gameData) return;
     const playerCount = Object.keys(gameData.players || {}).length;
-    if (playerCount < 4) {
-      setStatusMessage('Need at least 4 players to start the game.');
+    if (playerCount < MIN_PLAYERS) {
+      setStatusMessage(`Need at least ${MIN_PLAYERS} players to start the game.`);
       setStatusType('error');
       return;
     }
@@ -60,6 +69,11 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
   return (
     <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
       <div className="card">
+        <SoundToggle
+          soundEnabled={soundEnabled}
+          onToggle={() => setSoundEnabled((prev) => !prev)}
+          disabled={!hasInitialized}
+        />
         <div className="lobby-header">
           <h2>Game Lobby</h2>
           <div className="game-code">{gameId}</div>
@@ -91,7 +105,7 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
           </button>
         </div>
 
-        <h3>Players ({players.length}/10)</h3>
+        <h3>Players ({players.length}/{MAX_PLAYERS})</h3>
         <ul className="players-list">
           {players.map((player) => (
             <li key={player.id}>
@@ -111,13 +125,15 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
 
         {isHost ? (
           <>
-            {players.length < 4 && (
-              <p className="center">Need {4 - players.length} more player(s) to start.</p>
+            {players.length < MIN_PLAYERS && (
+              <p className="center">
+                Need {MIN_PLAYERS - players.length} more player(s) to start.
+              </p>
             )}
             <button
               className="button button-primary"
               onClick={handleStartGame}
-              disabled={loading || players.length < 4}
+              disabled={loading || players.length < MIN_PLAYERS}
             >
               {loading ? 'Starting...' : 'Start Game'}
             </button>

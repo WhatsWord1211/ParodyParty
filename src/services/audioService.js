@@ -5,9 +5,20 @@ const audioSources = {
 
 let currentAudio = null;
 let currentKey = null;
+let soundEnabled = true;
+
+export const isSoundEnabled = () => soundEnabled;
+
+export const setSoundEnabled = (enabled) => {
+  soundEnabled = Boolean(enabled);
+  if (!soundEnabled) {
+    stopRoundAudio();
+  }
+};
 
 export const playRoundAudio = async (key) => {
   if (!audioSources[key]) return;
+  if (!soundEnabled) return;
   if (currentKey === key && currentAudio && !currentAudio.paused) {
     return;
   }

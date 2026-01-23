@@ -83,7 +83,7 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
       } else if (gameData.phase === 'voting' || gameData.phase === 'results' || gameData.phase === 'gameOver') {
         onNavigate('results', { gameId: normalizedCode, playerId: userId, isDisplayOnly: false });
       } else {
-        onNavigate('lobby', { gameId: normalizedCode, playerId: userId, isHost: false });
+        onNavigate('lobby', { gameId: normalizedCode, playerId: userId, isHost: false, isDisplayOnly: false });
       }
     } catch (error) {
       setError(error.message || 'Failed to join game.');

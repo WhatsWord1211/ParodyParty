@@ -10,6 +10,14 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
+import {
+  MAX_PLAYERS,
+  MAX_VOTES,
+  MIN_PLAYERS,
+  PROMPT_DURATION_MS,
+  VOTING_DURATION_MS
+} from '../constants/gameSettings';
+import { getRequiredVoteCount, hasVoterCompletedBallot } from '../utils/voteUtils';
 
 /**
  * Game Service - Handles all Firestore operations for game state
@@ -17,6 +25,7 @@ import { db } from './firebase';
  * Game State Structure:
  * games/{gameId}
  *   - hostId: string
+ *   - hostIsDisplayOnly: boolean
  *   - phase: 'lobby' | 'prompt' | 'submission' | 'voting' | 'results'
  *   - round: number
  *   - currentPrompt: { promptId, title, prompt }
@@ -54,6 +63,7 @@ export const createGame = async (hostId, hostName, options = {}) => {
   
   const gameData = {
     hostId,
+    hostIsDisplayOnly: !hostIsPlayer,
     phase: 'lobby',
     round: 0,
     currentPrompt: null,
@@ -102,10 +112,10 @@ export const joinGame = async (gameId, playerId, playerName) => {
     throw new Error('Game has already started');
   }
   
-  // Check maximum player limit (10 players)
+  // Check maximum player limit
   const currentPlayerCount = Object.keys(gameData.players || {}).length;
-  if (currentPlayerCount >= 10) {
-    throw new Error('Game is full (maximum 10 players)');
+  if (currentPlayerCount >= MAX_PLAYERS) {
+    throw new Error(`Game is full (maximum ${MAX_PLAYERS} players)`);
   }
   
   await updateDoc(gameRef, {
@@ -127,7 +137,7 @@ export const startGame = async (gameId, prompt = null) => {
   const gameRef = doc(db, 'games', gameId);
   
   // Prompt timer: 1 minute 30 seconds
-  const timerEndsAt = new Date(Date.now() + 90000);
+  const timerEndsAt = new Date(Date.now() + PROMPT_DURATION_MS);
   
   const updateData = {
     phase: 'prompt',
@@ -145,45 +155,37 @@ export const startGame = async (gameId, prompt = null) => {
 
 export const checkAndProgressToVoting = async (gameId) => {
   const gameRef = doc(db, 'games', gameId);
-  const gameSnap = await getDoc(gameRef);
-  
-  if (!gameSnap.exists()) return;
-  
-  const gameData = gameSnap.data();
-  
-  // Only check if we're in prompt phase
-  if (gameData.phase !== 'prompt') return;
-  
-  const players = gameData.players || {};
-  const playerIds = Object.keys(players);
-  const allSubmitted = playerIds.every(playerId => players[playerId].submission !== null);
-  
-  // Check if timer has expired (with 1 second buffer for timing)
-  const timerEndsAt = gameData.timerEndsAt ? new Date(gameData.timerEndsAt).getTime() : null;
-  const now = Date.now();
-  const timerExpired = timerEndsAt && timerEndsAt <= now;
-  
-  // If all players submitted OR timer expired, move to voting phase
-  if (allSubmitted || timerExpired) {
-    try {
-      // Double-check phase hasn't changed (prevent race conditions)
-      const currentSnap = await getDoc(gameRef);
-      if (currentSnap.exists() && currentSnap.data().phase === 'prompt') {
-        const votingEndsAt = new Date(Date.now() + 90000);
-        const updates = { phase: 'voting', timerEndsAt: votingEndsAt.toISOString() };
+  try {
+    await runTransaction(db, async (transaction) => {
+      const gameSnap = await transaction.get(gameRef);
+      if (!gameSnap.exists()) return;
 
-        // Fill in missing submissions so voting can proceed.
-        Object.entries(players).forEach(([playerId, player]) => {
-          if (player.submission === null) {
-            updates[`players.${playerId}.submission`] = `${player.name} did not answer`;
-          }
-        });
+      const gameData = gameSnap.data();
+      if (gameData.phase !== 'prompt') return;
 
-        await updateDoc(gameRef, updates);
-      }
-    } catch (error) {
-      console.error('Error progressing to voting:', error);
-    }
+      const players = gameData.players || {};
+      const playerIds = Object.keys(players);
+      const allSubmitted = playerIds.every((playerId) => players[playerId].submission !== null);
+
+      const timerEndsAt = gameData.timerEndsAt ? new Date(gameData.timerEndsAt).getTime() : null;
+      const now = Date.now();
+      const timerExpired = timerEndsAt && timerEndsAt <= now;
+
+      if (!allSubmitted && !timerExpired) return;
+
+      const votingEndsAt = new Date(Date.now() + VOTING_DURATION_MS);
+      const updates = { phase: 'voting', timerEndsAt: votingEndsAt.toISOString() };
+
+      Object.entries(players).forEach(([playerId, player]) => {
+        if (player.submission === null) {
+          updates[`players.${playerId}.submission`] = `${player.name} did not answer`;
+        }
+      });
+
+      transaction.update(gameRef, updates);
+    });
+  } catch (error) {
+    console.error('Error progressing to voting:', error);
   }
 };
 
@@ -194,7 +196,7 @@ export const submitAnswer = async (gameId, playerId, answer) => {
   });
 };
 
-export const submitVotes = async (gameId, voterId, rankedPlayerIds, requiredCount = 3) => {
+export const submitVotes = async (gameId, voterId, rankedPlayerIds, requiredCount = MAX_VOTES) => {
   const gameRef = doc(db, 'games', gameId);
   const gameSnap = await getDoc(gameRef);
   if (!gameSnap.exists()) {
@@ -337,7 +339,7 @@ export const calculateScores = async (gameId) => {
     }
 
     const playerCount = Object.keys(gameData.players || {}).length;
-    if (playerCount < 4 && winnerIds.length === 0) {
+    if (playerCount < MIN_PLAYERS && winnerIds.length === 0) {
       const topScore = Math.max(...Object.values(totalScores));
       const topScoreIds = Object.keys(totalScores).filter((id) => totalScores[id] === topScore);
       const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVoteTotals[id] || 0));
@@ -370,18 +372,10 @@ export const checkAndProgressToResults = async (gameId) => {
   const playerIds = Object.keys(players);
   
   // Each voter must submit exactly 3 ranked votes.
-  const requiredCount = Math.min(3, Math.max(0, playerIds.length - 1));
-  const allVoted = playerIds.every((voterId) => {
-    let voteCount = 0;
-    playerIds.forEach((playerId) => {
-      if (playerId === voterId) return;
-      const target = players[playerId];
-      if (target?.votes && target.votes[voterId] !== undefined) {
-        voteCount += 1;
-      }
-    });
-    return voteCount === requiredCount;
-  });
+  const requiredCount = getRequiredVoteCount(playerIds.length);
+  const allVoted = playerIds.every((voterId) =>
+    hasVoterCompletedBallot(players, voterId, requiredCount)
+  );
   
   // If all players voted, calculate scores and move to results phase
   const timerEndsAt = gameData.timerEndsAt ? new Date(gameData.timerEndsAt).getTime() : null;

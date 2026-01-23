@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { subscribeToGame, submitAnswer, checkAndProgressToVoting } from '../services/gameService';
 import { playRoundAudio, stopRoundAudio } from '../services/audioService';
+import SoundToggle from '../components/SoundToggle';
+import useSoundPreference from '../hooks/useSoundPreference';
 
 export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
@@ -11,6 +13,13 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
   const hasCheckedExpirationRef = useRef(false);
   const promptTimeoutRef = useRef(null);
   const inputRef = useRef(null);
+  const hasRequestedVotingRef = useRef(false);
+  const { soundEnabled, setSoundEnabled, hasInitialized } = useSoundPreference({
+    gameId,
+    hostIsDisplayOnly: gameData?.hostIsDisplayOnly,
+    isDisplayOnly,
+    isReady: Boolean(gameData)
+  });
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -50,12 +59,13 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
   }, [gameId, onNavigate, playerId]);
 
   useEffect(() => {
-    if (gameData?.phase === 'prompt') {
+    if (!hasInitialized) return;
+    if (gameData?.phase === 'prompt' && soundEnabled) {
       playRoundAudio('prompt');
     } else {
       stopRoundAudio();
     }
-  }, [gameData?.phase]);
+  }, [gameData?.phase, soundEnabled, hasInitialized]);
 
   useEffect(() => {
     if (gameData?.phase === 'prompt' && gameData.timerEndsAt) {
@@ -68,7 +78,10 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
 
         if (remaining === 0 && !hasCheckedExpirationRef.current) {
           hasCheckedExpirationRef.current = true;
-          checkAndProgressToVoting(gameId).catch(console.error);
+          if (!hasRequestedVotingRef.current) {
+            hasRequestedVotingRef.current = true;
+            checkAndProgressToVoting(gameId).catch(console.error);
+          }
         }
       };
 
@@ -78,7 +91,10 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
       if (!promptTimeoutRef.current) {
         const timeoutMs = Math.max(0, new Date(currentTimerEndsAt).getTime() - Date.now() + 250);
         promptTimeoutRef.current = setTimeout(() => {
-          checkAndProgressToVoting(gameId).catch(console.error);
+          if (!hasRequestedVotingRef.current) {
+            hasRequestedVotingRef.current = true;
+            checkAndProgressToVoting(gameId).catch(console.error);
+          }
         }, timeoutMs);
       }
 
@@ -95,6 +111,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
     }
 
     hasCheckedExpirationRef.current = false;
+    hasRequestedVotingRef.current = false;
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
@@ -110,9 +127,12 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
       const players = Object.values(gameData.players);
       const allSubmitted = players.every((player) => player.submission !== null);
       if (allSubmitted) {
-        setTimeout(() => {
-          checkAndProgressToVoting(gameId).catch(console.error);
-        }, 100);
+        if (!hasRequestedVotingRef.current) {
+          hasRequestedVotingRef.current = true;
+          setTimeout(() => {
+            checkAndProgressToVoting(gameId).catch(console.error);
+          }, 100);
+        }
       }
     }
   }, [gameData?.phase, gameData?.players, gameId]);
@@ -134,7 +154,10 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
     try {
       await submitAnswer(gameId, playerId, answer.trim());
       setSubmitted(true);
-      checkAndProgressToVoting(gameId).catch(console.error);
+      if (!hasRequestedVotingRef.current) {
+        hasRequestedVotingRef.current = true;
+        checkAndProgressToVoting(gameId).catch(console.error);
+      }
     } catch (error) {
       console.error('Failed to submit answer:', error);
     }
@@ -143,6 +166,11 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
   return (
     <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
       <div className="card">
+        <SoundToggle
+          soundEnabled={soundEnabled}
+          onToggle={() => setSoundEnabled((prev) => !prev)}
+          disabled={!hasInitialized}
+        />
         <div className="center">
           {gameData.phase === 'prompt' && (
             <div className="timer">{timeRemaining > 0 ? formatTime(timeRemaining) : "Time's up!"}</div>
