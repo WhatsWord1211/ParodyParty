@@ -77,13 +77,14 @@ export default function HomeScreen({ onNavigate, initialGameCode }) {
     try {
       const userId = auth.currentUser?.uid || (await signInAnonymously(auth)).user.uid;
       const normalizedCode = gameCode.trim().toUpperCase();
-      const gameData = await joinGame(normalizedCode, userId, playerName.trim());
+      const { gameData, resolvedPlayerId } = await joinGame(normalizedCode, userId, playerName.trim());
+      const effectivePlayerId = resolvedPlayerId || userId;
       if (gameData.phase === 'prompt') {
-        onNavigate('game', { gameId: normalizedCode, playerId: userId, isDisplayOnly: false });
+        onNavigate('game', { gameId: normalizedCode, playerId: effectivePlayerId, isDisplayOnly: false });
       } else if (gameData.phase === 'voting' || gameData.phase === 'results' || gameData.phase === 'gameOver') {
-        onNavigate('results', { gameId: normalizedCode, playerId: userId, isDisplayOnly: false });
+        onNavigate('results', { gameId: normalizedCode, playerId: effectivePlayerId, isDisplayOnly: false });
       } else {
-        onNavigate('lobby', { gameId: normalizedCode, playerId: userId, isHost: false, isDisplayOnly: false });
+        onNavigate('lobby', { gameId: normalizedCode, playerId: effectivePlayerId, isHost: false, isDisplayOnly: false });
       }
     } catch (error) {
       setError(error.message || 'Failed to join game.');

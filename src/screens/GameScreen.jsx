@@ -42,6 +42,9 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
           }
           onNavigate('results', { gameId, playerId, isDisplayOnly });
         }
+        if (data.phase === 'gameOver') {
+          onNavigate('results', { gameId, playerId, isDisplayOnly });
+        }
       }
     });
 
@@ -124,7 +127,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
 
   useEffect(() => {
     if (gameData?.phase === 'prompt' && gameData.players) {
-      const players = Object.values(gameData.players);
+      const players = Object.values(gameData.players).filter((player) => player?.connected !== false);
       const allSubmitted = players.every((player) => player.submission !== null);
       if (allSubmitted) {
         if (!hasRequestedVotingRef.current) {

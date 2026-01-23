@@ -26,6 +26,9 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
         if (data.phase === 'prompt') {
           onNavigate('game', { gameId, playerId, isDisplayOnly });
         }
+        if (data.phase === 'gameOver') {
+          onNavigate('results', { gameId, playerId, isDisplayOnly });
+        }
       }
     });
     return () => unsubscribe();
@@ -33,7 +36,7 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
 
   const handleStartGame = async () => {
     if (!gameData) return;
-    const playerCount = Object.keys(gameData.players || {}).length;
+    const playerCount = Object.values(gameData.players || {}).filter((player) => player?.connected !== false).length;
     if (playerCount < MIN_PLAYERS) {
       setStatusMessage(`Need at least ${MIN_PLAYERS} players to start the game.`);
       setStatusType('error');
@@ -65,6 +68,7 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
     id,
     ...player
   }));
+  const connectedPlayers = players.filter((player) => player.connected !== false);
 
   return (
     <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
@@ -105,7 +109,7 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
           </button>
         </div>
 
-        <h3>Players ({players.length}/{MAX_PLAYERS})</h3>
+        <h3>Players ({connectedPlayers.length}/{MAX_PLAYERS})</h3>
         <ul className="players-list">
           {players.map((player) => (
             <li key={player.id}>
@@ -113,6 +117,7 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
                 {player.name} {player.id === playerId ? '(You)' : ''}
               </span>
               {player.id === gameData.hostId && <span className="badge">Host</span>}
+              {player.connected === false && <span className="badge badge-muted">Disconnected</span>}
             </li>
           ))}
         </ul>
@@ -125,15 +130,15 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
 
         {isHost ? (
           <>
-            {players.length < MIN_PLAYERS && (
+            {connectedPlayers.length < MIN_PLAYERS && (
               <p className="center">
-                Need {MIN_PLAYERS - players.length} more player(s) to start.
+                Need {MIN_PLAYERS - connectedPlayers.length} more player(s) to start.
               </p>
             )}
             <button
               className="button button-primary"
               onClick={handleStartGame}
-              disabled={loading || players.length < MIN_PLAYERS}
+              disabled={loading || connectedPlayers.length < MIN_PLAYERS}
             >
               {loading ? 'Starting...' : 'Start Game'}
             </button>

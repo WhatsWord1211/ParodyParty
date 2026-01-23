@@ -12,7 +12,11 @@ import { playRoundAudio, stopRoundAudio } from '../services/audioService';
 import SoundToggle from '../components/SoundToggle';
 import useSoundPreference from '../hooks/useSoundPreference';
 import { PROMPT_DURATION_MS, RESULTS_DURATION_MS } from '../constants/gameSettings';
-import { getRequiredVoteCount, hasVoterCompletedBallot } from '../utils/voteUtils';
+import {
+  getConnectedPlayerIds,
+  getRequiredVoteCount,
+  hasVoterCompletedBallot
+} from '../utils/voteUtils';
 
 export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavigate }) {
   const [gameData, setGameData] = useState(null);
@@ -23,7 +27,8 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerIntervalRef = useRef(null);
   const hasRequestedResultsRef = useRef(false);
-  const requiredVoteCount = getRequiredVoteCount(Object.keys(gameData?.players || {}).length);
+  const connectedPlayerIds = getConnectedPlayerIds(gameData?.players);
+  const requiredVoteCount = getRequiredVoteCount(connectedPlayerIds.length);
   const { soundEnabled, setSoundEnabled, hasInitialized } = useSoundPreference({
     gameId,
     hostIsDisplayOnly: gameData?.hostIsDisplayOnly,
@@ -43,7 +48,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
         setGameData(data);
 
         if (!isDisplayOnly) {
-          const requiredCount = getRequiredVoteCount(Object.keys(data.players || {}).length);
+          const requiredCount = getRequiredVoteCount(getConnectedPlayerIds(data.players).length);
           const voted = hasVoterCompletedBallot(data.players, playerId, requiredCount);
           setHasVoted(voted);
           setLocalSubmitted(voted);
@@ -120,7 +125,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
   useEffect(() => {
     if (gameData?.phase !== 'voting' || !gameData?.players) return;
-    const playerIds = Object.keys(gameData.players);
+    const playerIds = getConnectedPlayerIds(gameData.players);
     const allVoted = playerIds.every((voterId) =>
       hasVoterCompletedBallot(gameData.players, voterId, requiredVoteCount)
     );
@@ -140,7 +145,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
         return;
       }
       const players = Object.entries(gameData.players || {})
-        .filter(([id]) => id !== playerId)
+        .filter(([id, player]) => id !== playerId && player?.connected !== false)
         .map(([id, player]) => ({
           playerId: id,
           answer: player.submission || 'No answer',
@@ -353,6 +358,9 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
           />
           <div className="center">
             <h2>Game Over</h2>
+            {gameData.gameOverReason === 'not_enough_players' && (
+              <p className="subtitle">Game ended because there were not enough players.</p>
+            )}
             {winners.length > 0 && (
               <p className="subtitle">
                 Winner{winners.length > 1 ? 's' : ''}:{' '}

@@ -17,7 +17,12 @@ import {
   PROMPT_DURATION_MS,
   VOTING_DURATION_MS
 } from '../constants/gameSettings';
-import { getRequiredVoteCount, hasVoterCompletedBallot } from '../utils/voteUtils';
+import {
+  getConnectedPlayerCount,
+  getConnectedPlayerIds,
+  getRequiredVoteCount,
+  hasVoterCompletedBallot
+} from '../utils/voteUtils';
 
 /**
  * Game Service - Handles all Firestore operations for game state
@@ -27,6 +32,7 @@ import { getRequiredVoteCount, hasVoterCompletedBallot } from '../utils/voteUtil
  *   - hostId: string
  *   - hostIsDisplayOnly: boolean
  *   - phase: 'lobby' | 'prompt' | 'submission' | 'voting' | 'results'
+ *   - gameOverReason: 'not_enough_players' | null
  *   - round: number
  *   - currentPrompt: { promptId, title, prompt }
  *   - timerEndsAt: timestamp
@@ -105,11 +111,32 @@ export const joinGame = async (gameId, playerId, playerName) => {
       [`players.${playerId}.connected`]: true
     });
     const refreshedSnap = await getDoc(gameRef);
-    return refreshedSnap.exists() ? refreshedSnap.data() : gameData;
+    return {
+      gameData: refreshedSnap.exists() ? refreshedSnap.data() : gameData,
+      resolvedPlayerId: playerId
+    };
   }
   
+  const normalizedName = playerName.trim().toLowerCase();
+  const disconnectedMatch = Object.entries(gameData.players || {}).find(([, player]) => {
+    if (player?.connected !== false) return false;
+    return player?.name?.trim().toLowerCase() === normalizedName;
+  });
+
+  if (disconnectedMatch) {
+    const [rejoinPlayerId] = disconnectedMatch;
+    await updateDoc(gameRef, {
+      [`players.${rejoinPlayerId}.connected`]: true
+    });
+    const refreshedSnap = await getDoc(gameRef);
+    return {
+      gameData: refreshedSnap.exists() ? refreshedSnap.data() : gameData,
+      resolvedPlayerId: rejoinPlayerId
+    };
+  }
+
   if (gameData.phase !== 'lobby') {
-    throw new Error('Game has already started');
+    throw new Error('Game has already started. Rejoin with your original name.');
   }
   
   // Check maximum player limit
@@ -130,12 +157,25 @@ export const joinGame = async (gameId, playerId, playerName) => {
   });
 
   const refreshedSnap = await getDoc(gameRef);
-  return refreshedSnap.exists() ? refreshedSnap.data() : gameData;
+  return {
+    gameData: refreshedSnap.exists() ? refreshedSnap.data() : gameData,
+    resolvedPlayerId: playerId
+  };
 };
 
 export const startGame = async (gameId, prompt = null) => {
   const gameRef = doc(db, 'games', gameId);
-  
+  const gameSnap = await getDoc(gameRef);
+  if (!gameSnap.exists()) {
+    throw new Error('Game not found');
+  }
+
+  const gameData = gameSnap.data();
+  const connectedCount = getConnectedPlayerCount(gameData.players || {});
+  if (connectedCount < MIN_PLAYERS) {
+    throw new Error(`Need at least ${MIN_PLAYERS} players to start the game.`);
+  }
+
   // Prompt timer: 1 minute 30 seconds
   const timerEndsAt = new Date(Date.now() + PROMPT_DURATION_MS);
   
@@ -164,7 +204,17 @@ export const checkAndProgressToVoting = async (gameId) => {
       if (gameData.phase !== 'prompt') return;
 
       const players = gameData.players || {};
-      const playerIds = Object.keys(players);
+      const playerIds = getConnectedPlayerIds(players);
+      if (playerIds.length < MIN_PLAYERS) {
+        transaction.update(gameRef, {
+          phase: 'gameOver',
+          gameOverReason: 'not_enough_players',
+          timerEndsAt: null,
+          winnerIds: []
+        });
+        return;
+      }
+
       const allSubmitted = playerIds.every((playerId) => players[playerId].submission !== null);
 
       const timerEndsAt = gameData.timerEndsAt ? new Date(gameData.timerEndsAt).getTime() : null;
@@ -176,8 +226,9 @@ export const checkAndProgressToVoting = async (gameId) => {
       const votingEndsAt = new Date(Date.now() + VOTING_DURATION_MS);
       const updates = { phase: 'voting', timerEndsAt: votingEndsAt.toISOString() };
 
-      Object.entries(players).forEach(([playerId, player]) => {
-        if (player.submission === null) {
+      playerIds.forEach((playerId) => {
+        const player = players[playerId];
+        if (player?.submission === null) {
           updates[`players.${playerId}.submission`] = `${player.name} did not answer`;
         }
       });
@@ -203,9 +254,11 @@ export const submitVotes = async (gameId, voterId, rankedPlayerIds, requiredCoun
     throw new Error('Game not found');
   }
 
+  const connectedPlayerIds = getConnectedPlayerIds(gameData.players || {});
+  const computedRequiredCount = getRequiredVoteCount(connectedPlayerIds.length);
   const uniqueIds = new Set(rankedPlayerIds.filter(Boolean));
-  if (uniqueIds.size !== requiredCount) {
-    throw new Error(`You must pick ${requiredCount} different answers.`);
+  if (uniqueIds.size !== computedRequiredCount) {
+    throw new Error(`You must pick ${computedRequiredCount} different answers.`);
   }
   if (uniqueIds.has(voterId)) {
     throw new Error('You cannot vote for your own answer.');
@@ -372,8 +425,22 @@ export const checkAndProgressToResults = async (gameId) => {
   const playerIds = Object.keys(players);
   
   // Each voter must submit exactly 3 ranked votes.
-  const requiredCount = getRequiredVoteCount(playerIds.length);
-  const allVoted = playerIds.every((voterId) =>
+  const connectedPlayerIds = getConnectedPlayerIds(players);
+  if (connectedPlayerIds.length < MIN_PLAYERS) {
+    try {
+      await updateDoc(gameRef, {
+        phase: 'gameOver',
+        gameOverReason: 'not_enough_players',
+        timerEndsAt: null,
+        winnerIds: []
+      });
+    } catch (error) {
+      console.error('Error ending game due to player count:', error);
+    }
+    return;
+  }
+  const requiredCount = getRequiredVoteCount(connectedPlayerIds.length);
+  const allVoted = connectedPlayerIds.every((voterId) =>
     hasVoterCompletedBallot(players, voterId, requiredCount)
   );
   
@@ -412,7 +479,8 @@ export const resetGame = async (gameId) => {
     timerEndsAt: null,
     currentPrompt: null,
     usedPrompts: [],
-    winnerIds: deleteField()
+    winnerIds: deleteField(),
+    gameOverReason: deleteField()
   };
 
   Object.keys(gameData.players || {}).forEach((playerId) => {
@@ -427,8 +495,33 @@ export const resetGame = async (gameId) => {
 
 export const leaveGame = async (gameId, playerId) => {
   const gameRef = doc(db, 'games', gameId);
-  await updateDoc(gameRef, {
-    [`players.${playerId}`]: deleteField()
+  await runTransaction(db, async (transaction) => {
+    const gameSnap = await transaction.get(gameRef);
+    if (!gameSnap.exists()) return;
+
+    const gameData = gameSnap.data();
+    if (!gameData.players?.[playerId]) return;
+
+    const updates = {
+      [`players.${playerId}.connected`]: false
+    };
+
+    const connectedPlayers = Object.entries(gameData.players || {})
+      .filter(([id, player]) => id !== playerId && player?.connected !== false)
+      .length;
+
+    if (
+      gameData.phase !== 'lobby' &&
+      gameData.phase !== 'gameOver' &&
+      connectedPlayers < MIN_PLAYERS
+    ) {
+      updates.phase = 'gameOver';
+      updates.gameOverReason = 'not_enough_players';
+      updates.timerEndsAt = null;
+      updates.winnerIds = [];
+    }
+
+    transaction.update(gameRef, updates);
   });
 };
 

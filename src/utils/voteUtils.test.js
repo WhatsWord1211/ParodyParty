@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   countVotesCastByVoter,
+  getConnectedPlayerCount,
+  getConnectedPlayerIds,
   getRequiredVoteCount,
   hasVoterCompletedBallot
 } from './voteUtils';
@@ -11,6 +13,17 @@ describe('voteUtils', () => {
     expect(getRequiredVoteCount(2)).toBe(1);
     expect(getRequiredVoteCount(4)).toBe(3);
     expect(getRequiredVoteCount(6)).toBe(3);
+  });
+
+  it('counts connected players', () => {
+    const players = {
+      alpha: { connected: true },
+      beta: { connected: false },
+      gamma: {}
+    };
+
+    expect(getConnectedPlayerIds(players)).toEqual(['alpha', 'gamma']);
+    expect(getConnectedPlayerCount(players)).toBe(2);
   });
 
   it('counts votes cast by a voter', () => {

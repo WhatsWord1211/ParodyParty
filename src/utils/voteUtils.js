@@ -1,6 +1,14 @@
 import { MAX_VOTES } from '../constants/gameSettings';
 
-export const getRequiredVoteCount = (playerCount) => Math.min(MAX_VOTES, Math.max(0, playerCount - 1));
+export const getConnectedPlayerIds = (players) =>
+  Object.entries(players || {})
+    .filter(([, player]) => player?.connected !== false)
+    .map(([playerId]) => playerId);
+
+export const getConnectedPlayerCount = (players) => getConnectedPlayerIds(players).length;
+
+export const getRequiredVoteCount = (playerCount) =>
+  Math.min(MAX_VOTES, Math.max(0, playerCount - 1));
 
 export const countVotesCastByVoter = (players, voterId) => {
   if (!players || !voterId) return 0;

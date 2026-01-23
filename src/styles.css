@@ -260,6 +260,11 @@ input {
   font-weight: 700;
 }
 
+.badge-muted {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
 .prompt-card {
   background: #ffffff;
   border-radius: 18px;
