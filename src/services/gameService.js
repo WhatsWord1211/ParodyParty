@@ -262,6 +262,7 @@ export const submitVotes = async (gameId, voterId, rankedPlayerIds, requiredCoun
     throw new Error('Game not found');
   }
 
+  const gameData = gameSnap.data();
   const votingPlayerIds = Array.isArray(gameData.votingPlayerIds)
     ? gameData.votingPlayerIds
     : getConnectedPlayerIds(gameData.players || {});
@@ -281,7 +282,6 @@ export const submitVotes = async (gameId, voterId, rankedPlayerIds, requiredCoun
     throw new Error('You cannot vote for your own answer.');
   }
 
-  const gameData = gameSnap.data();
   const updates = {};
 
   // Clear previous votes by this voter.

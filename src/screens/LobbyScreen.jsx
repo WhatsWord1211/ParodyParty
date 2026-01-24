@@ -91,21 +91,32 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
             className="button button-outline"
             onClick={async () => {
               try {
+                if (navigator.share) {
+                  await navigator.share({
+                    title: 'Parody Party',
+                    text: 'Join my game of Parody Party!',
+                    url: joinUrl
+                  });
+                  setStatusMessage('Share sheet opened.');
+                  setStatusType('info');
+                  return;
+                }
+
                 if (!navigator.clipboard?.writeText) {
-                  setStatusMessage('Copy not supported in this browser. Manually copy the link.');
+                  setStatusMessage('Sharing not supported. Manually copy the link.');
                   setStatusType('error');
                   return;
                 }
                 await navigator.clipboard.writeText(joinUrl);
-                setStatusMessage('Join link copied!');
+                setStatusMessage('Game link copied!');
                 setStatusType('info');
               } catch (error) {
-                setStatusMessage('Copy failed. Manually copy the link.');
+                setStatusMessage('Share failed. Manually copy the link.');
                 setStatusType('error');
               }
             }}
           >
-            Copy Join Link
+            Share Game Link
           </button>
         </div>
 
