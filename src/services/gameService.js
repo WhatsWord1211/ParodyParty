@@ -237,6 +237,10 @@ export const checkAndProgressToVoting = async (gameId) => {
         votingRequiredCount
       };
 
+      Object.keys(players).forEach((playerId) => {
+        updates[`players.${playerId}.votes`] = null;
+      });
+
       votingPlayerIds.forEach((playerId) => {
         const player = players[playerId];
         if (player?.submission === null) {

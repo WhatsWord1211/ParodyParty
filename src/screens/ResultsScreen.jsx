@@ -44,6 +44,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
     isDisplayOnly,
     isReady: Boolean(gameData)
   });
+  const isHost = gameData?.hostId === playerId;
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -71,11 +72,19 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
         setGameData(data);
 
         if (!isDisplayOnly) {
+          const connectedIds = getConnectedPlayerIds(data.players || {}).filter(
+            (id) => !(data.hostIsDisplayOnly && id === data.hostId)
+          );
+          const activeVotingIds = (Array.isArray(data.votingPlayerIds)
+            ? data.votingPlayerIds
+            : connectedIds
+          ).filter((id) => !(data.hostIsDisplayOnly && id === data.hostId));
           const requiredCount =
             typeof data.votingRequiredCount === 'number'
               ? data.votingRequiredCount
-              : getRequiredVoteCount(getConnectedPlayerIds(data.players).length);
-          const voted = hasVoterCompletedBallot(data.players, playerId, requiredCount);
+              : getRequiredVoteCount(activeVotingIds.length);
+          const canVote = activeVotingIds.includes(playerId);
+          const voted = canVote && hasVoterCompletedBallot(data.players, playerId, requiredCount);
           setHasVoted(voted);
           setLocalSubmitted(voted);
           setStatusMessage(voted ? 'Your votes are submitted. Waiting on other players...' : '');
@@ -203,7 +212,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   }, [gameData?.phase, gameData?.round, gameId, playerId, shuffledAnswers.length, gameData?.players]);
 
   useEffect(() => {
-    if (gameData?.phase === 'results') {
+    if (gameData?.phase === 'results' && isHost) {
       const timer = setTimeout(async () => {
         const usedPromptIds = gameData.usedPrompts || [];
         const nextPrompt = getRandomPrompt(null, usedPromptIds);
@@ -221,7 +230,8 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
       return () => clearTimeout(timer);
     }
-  }, [gameData?.phase, gameData?.round, gameData?.usedPrompts, gameId]);
+    return undefined;
+  }, [gameData?.phase, gameData?.round, gameData?.usedPrompts, gameId, isHost]);
 
   const handleRankPick = (answerIndex) => {
     if (hasVoted || localSubmitted) return;
@@ -238,7 +248,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   };
 
   const handleSubmitVotes = async () => {
-    if (hasVoted || localSubmitted) return;
+    if (hasVoted || localSubmitted || !votingPlayerIds.includes(playerId)) return;
     const rankedPlayerIds = rankedVotes;
     if (rankedPlayerIds.length !== requiredVoteCount) {
       setStatusMessage(`Pick ${requiredVoteCount} different answers before submitting.`);
