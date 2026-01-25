@@ -214,6 +214,10 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   useEffect(() => {
     if (gameData?.phase === 'results' && isHost) {
       const timer = setTimeout(async () => {
+        if (gameData.pendingGameOver) {
+          await updateGamePhase(gameId, 'gameOver', { pendingGameOver: false });
+          return;
+        }
         const usedPromptIds = gameData.usedPrompts || [];
         const nextPrompt = getRandomPrompt(null, usedPromptIds);
         const timerEndsAt = new Date(Date.now() + PROMPT_DURATION_MS);
@@ -231,7 +235,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [gameData?.phase, gameData?.round, gameData?.usedPrompts, gameId, isHost]);
+  }, [gameData?.phase, gameData?.round, gameData?.usedPrompts, gameData?.pendingGameOver, gameId, isHost]);
 
   const handleRankPick = (answerIndex) => {
     if (hasVoted || localSubmitted) return;
@@ -416,14 +420,16 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
           <div className="score-banner">Race to 10,000 points</div>
 
-          {sortedPlayers.map((player, index) => (
-            <div className="score-card" key={player.id}>
-              <strong>
-                #{index + 1} {player.name} {player.id === playerId ? '(You)' : ''}
-              </strong>
-              <div>Score: {player.score || 0}</div>
-            </div>
-          ))}
+          <div className="score-list">
+            {sortedPlayers.map((player, index) => (
+              <div className="score-card" key={player.id}>
+                <strong>
+                  #{index + 1} {player.name} {player.id === playerId ? '(You)' : ''}
+                </strong>
+                <div>Score: {player.score || 0}</div>
+              </div>
+            ))}
+          </div>
 
           <div className="button-row" style={{ marginTop: 16 }}>
             {isHost && (
@@ -484,14 +490,16 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
         <div className="score-banner">Race to 10,000 points</div>
 
-        {sortedPlayers.map((player, index) => (
-          <div className="score-card" key={player.id}>
-            <strong>
-              #{index + 1} {player.name} {player.id === playerId ? '(You)' : ''}
-            </strong>
-            <div>Score: {player.score || 0}</div>
-          </div>
-        ))}
+        <div className="score-list">
+          {sortedPlayers.map((player, index) => (
+            <div className="score-card" key={player.id}>
+              <strong>
+                #{index + 1} {player.name} {player.id === playerId ? '(You)' : ''}
+              </strong>
+              <div>Score: {player.score || 0}</div>
+            </div>
+          ))}
+        </div>
 
         <p className="center">Advancing to Round {gameData.round + 1}...</p>
       </div>

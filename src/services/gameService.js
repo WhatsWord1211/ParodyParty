@@ -35,6 +35,7 @@ import {
  *   - votingPlayerIds: string[] | null
  *   - votingRequiredCount: number | null
  *   - gameOverReason: 'not_enough_players' | null
+ *   - pendingGameOver: boolean | null
  *   - round: number
  *   - currentPrompt: { promptId, title, prompt }
  *   - timerEndsAt: timestamp
@@ -415,7 +416,7 @@ export const calculateScores = async (gameId) => {
       const topScoreIds = thresholdWinners.filter((id) => totalScores[id] === topScore);
       const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVoteTotals[id] || 0));
       winnerIds = topScoreIds.filter((id) => (totalFirstVoteTotals[id] || 0) === maxFirstVotes);
-      updates.phase = 'gameOver';
+      updates.pendingGameOver = true;
       updates.winnerIds = winnerIds;
     }
 
@@ -425,7 +426,7 @@ export const calculateScores = async (gameId) => {
       const topScoreIds = Object.keys(totalScores).filter((id) => totalScores[id] === topScore);
       const maxFirstVotes = Math.max(...topScoreIds.map((id) => totalFirstVoteTotals[id] || 0));
       winnerIds = topScoreIds.filter((id) => (totalFirstVoteTotals[id] || 0) === maxFirstVotes);
-      updates.phase = 'gameOver';
+      updates.pendingGameOver = true;
       updates.winnerIds = winnerIds;
     }
 
@@ -493,10 +494,8 @@ export const checkAndProgressToResults = async (gameId) => {
     const currentSnap = await getDoc(gameRef);
     if (currentSnap.exists() && currentSnap.data().phase === 'voting') {
       // Calculate scores first
-      const { gameOver } = await calculateScores(gameId);
-      if (!gameOver) {
-        await updateDoc(gameRef, { phase: 'results' });
-      }
+      await calculateScores(gameId);
+      await updateDoc(gameRef, { phase: 'results', timerEndsAt: null });
     }
   } catch (error) {
     console.error('Error progressing to results:', error);
@@ -520,6 +519,7 @@ export const resetGame = async (gameId) => {
     currentPrompt: null,
     usedPrompts: [],
     winnerIds: deleteField(),
+    pendingGameOver: deleteField(),
     gameOverReason: deleteField(),
     votingPlayerIds: deleteField(),
     votingRequiredCount: deleteField()

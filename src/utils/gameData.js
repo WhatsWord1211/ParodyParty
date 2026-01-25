@@ -513,11 +513,54 @@ export const textPrompts = [
   }
 ];
 
+const RECENT_PROMPTS_STORAGE_KEY = 'pp_recent_prompt_ids';
+const MAX_RECENT_PROMPTS = 20;
+
+const loadRecentPromptIds = () => {
+  if (typeof window === 'undefined' || !window.localStorage) return [];
+  try {
+    const raw = window.localStorage.getItem(RECENT_PROMPTS_STORAGE_KEY);
+    const parsed = JSON.parse(raw || '[]');
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const storeRecentPromptId = (promptId) => {
+  if (typeof window === 'undefined' || !window.localStorage || !promptId) return;
+  try {
+    const recent = loadRecentPromptIds().filter((id) => id !== promptId);
+    const updated = [promptId, ...recent].slice(0, MAX_RECENT_PROMPTS);
+    window.localStorage.setItem(RECENT_PROMPTS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (error) {
+    // Ignore storage errors (private mode, blocked storage, etc.)
+  }
+};
+
+const getRandomIndex = (max) => {
+  if (max <= 1) return 0;
+  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+    const maxUint32 = 0xffffffff;
+    const limit = Math.floor(maxUint32 / max) * max;
+    const buffer = new Uint32Array(1);
+    let value = 0;
+    do {
+      window.crypto.getRandomValues(buffer);
+      value = buffer[0];
+    } while (value >= limit);
+    return value % max;
+  }
+  return Math.floor(Math.random() * max);
+};
+
 export const getRandomPrompt = (difficulty = null, usedPromptIds = []) => {
   let availablePrompts = textPrompts;
+  const recentPromptIds = loadRecentPromptIds();
+  const excludedPromptIds = new Set([...(usedPromptIds || []), ...recentPromptIds]);
 
-  if (usedPromptIds && usedPromptIds.length > 0) {
-    availablePrompts = availablePrompts.filter((prompt) => !usedPromptIds.includes(prompt.promptId));
+  if (excludedPromptIds.size > 0) {
+    availablePrompts = availablePrompts.filter((prompt) => !excludedPromptIds.has(prompt.promptId));
   }
 
   if (difficulty) {
@@ -528,9 +571,18 @@ export const getRandomPrompt = (difficulty = null, usedPromptIds = []) => {
     availablePrompts = difficulty
       ? textPrompts.filter((prompt) => prompt.difficulty === difficulty)
       : textPrompts;
+    if (usedPromptIds && usedPromptIds.length > 0) {
+      availablePrompts = availablePrompts.filter(
+        (prompt) => !usedPromptIds.includes(prompt.promptId)
+      );
+    }
   }
 
-  const randomIndex = Math.floor(Math.random() * availablePrompts.length);
-  return availablePrompts[randomIndex];
+  const randomIndex = getRandomIndex(availablePrompts.length);
+  const selectedPrompt = availablePrompts[randomIndex];
+  if (selectedPrompt?.promptId) {
+    storeRecentPromptId(selectedPrompt.promptId);
+  }
+  return selectedPrompt;
 };
 

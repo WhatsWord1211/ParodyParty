@@ -327,6 +327,22 @@ input {
   border: 1px solid #e2e8f0;
 }
 
+.score-list {
+  display: grid;
+  gap: 12px;
+}
+
+.display-only .score-list {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.display-only .score-card {
+  padding: 10px;
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
 .score-banner {
   background: linear-gradient(135deg, #dbeafe 0%, #eef2ff 100%);
   color: #1e3a8a;
@@ -335,6 +351,10 @@ input {
   margin: 12px 0 20px;
   text-align: center;
   font-weight: 700;
+}
+
+.display-only .score-banner {
+  margin: 10px 0 12px;
 }
 
 .answers-grid {
