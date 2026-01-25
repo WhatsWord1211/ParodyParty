@@ -27,10 +27,13 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerIntervalRef = useRef(null);
   const hasRequestedResultsRef = useRef(false);
-  const connectedPlayerIds = getConnectedPlayerIds(gameData?.players);
-  const votingPlayerIds = Array.isArray(gameData?.votingPlayerIds)
+  const connectedPlayerIds = getConnectedPlayerIds(gameData?.players).filter(
+    (id) => !(gameData?.hostIsDisplayOnly && id === gameData?.hostId)
+  );
+  const votingPlayerIds = (Array.isArray(gameData?.votingPlayerIds)
     ? gameData.votingPlayerIds
-    : connectedPlayerIds;
+    : connectedPlayerIds
+  ).filter((id) => !(gameData?.hostIsDisplayOnly && id === gameData?.hostId));
   const requiredVoteCount =
     typeof gameData?.votingRequiredCount === 'number'
       ? gameData.votingRequiredCount

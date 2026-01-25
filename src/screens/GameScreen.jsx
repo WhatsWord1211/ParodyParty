@@ -130,7 +130,13 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
 
   useEffect(() => {
     if (gameData?.phase === 'prompt' && gameData.players) {
-      const players = Object.values(gameData.players).filter((player) => player?.connected !== false);
+      const players = Object.entries(gameData.players)
+        .filter(
+          ([id, player]) =>
+            player?.connected !== false &&
+            !(gameData.hostIsDisplayOnly && id === gameData.hostId)
+        )
+        .map(([, player]) => player);
       const allSubmitted = players.every((player) => player.submission !== null);
       if (allSubmitted) {
         setTimeout(() => {
@@ -149,7 +155,13 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
   }
 
   const prompt = gameData.currentPrompt;
-  const players = Object.values(gameData.players || {});
+  const players = Object.entries(gameData.players || {})
+    .filter(
+      ([id, player]) =>
+        player?.connected !== false &&
+        !(gameData.hostIsDisplayOnly && id === gameData.hostId)
+    )
+    .map(([, player]) => player);
   const someDidNotAnswer = players.some((player) => player.submission === null && timeRemaining === 0);
 
   const handleSubmit = async () => {

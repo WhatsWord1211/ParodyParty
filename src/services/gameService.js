@@ -206,8 +206,11 @@ export const checkAndProgressToVoting = async (gameId) => {
       if (gameData.phase !== 'prompt') return;
 
       const players = gameData.players || {};
-      const playerIds = getConnectedPlayerIds(players);
-      if (playerIds.length < MIN_PLAYERS) {
+      const connectedPlayerIds = getConnectedPlayerIds(players);
+      const votingPlayerIds = connectedPlayerIds.filter(
+        (playerId) => !(gameData.hostIsDisplayOnly && playerId === gameData.hostId)
+      );
+      if (votingPlayerIds.length < MIN_PLAYERS) {
         transaction.update(gameRef, {
           phase: 'gameOver',
           gameOverReason: 'not_enough_players',
@@ -217,7 +220,7 @@ export const checkAndProgressToVoting = async (gameId) => {
         return;
       }
 
-      const allSubmitted = playerIds.every((playerId) => players[playerId].submission !== null);
+      const allSubmitted = votingPlayerIds.every((playerId) => players[playerId].submission !== null);
 
       const timerEndsAt = gameData.timerEndsAt ? new Date(gameData.timerEndsAt).getTime() : null;
       const now = Date.now();
@@ -226,15 +229,15 @@ export const checkAndProgressToVoting = async (gameId) => {
       if (!allSubmitted && !timerExpired) return;
 
       const votingEndsAt = new Date(Date.now() + VOTING_DURATION_MS);
-      const votingRequiredCount = getRequiredVoteCount(playerIds.length);
+      const votingRequiredCount = getRequiredVoteCount(votingPlayerIds.length);
       const updates = {
         phase: 'voting',
         timerEndsAt: votingEndsAt.toISOString(),
-        votingPlayerIds: playerIds,
+        votingPlayerIds,
         votingRequiredCount
       };
 
-      playerIds.forEach((playerId) => {
+      votingPlayerIds.forEach((playerId) => {
         const player = players[playerId];
         if (player?.submission === null) {
           updates[`players.${playerId}.submission`] = `${player.name} did not answer`;
@@ -263,13 +266,17 @@ export const submitVotes = async (gameId, voterId, rankedPlayerIds, requiredCoun
   }
 
   const gameData = gameSnap.data();
-  const votingPlayerIds = Array.isArray(gameData.votingPlayerIds)
+  const votingPlayerIds = (Array.isArray(gameData.votingPlayerIds)
     ? gameData.votingPlayerIds
-    : getConnectedPlayerIds(gameData.players || {});
+    : getConnectedPlayerIds(gameData.players || {})
+  ).filter((playerId) => !(gameData.hostIsDisplayOnly && playerId === gameData.hostId));
   const computedRequiredCount =
     typeof gameData.votingRequiredCount === 'number'
       ? gameData.votingRequiredCount
       : getRequiredVoteCount(votingPlayerIds.length);
+  if (!votingPlayerIds.includes(voterId)) {
+    throw new Error('You are not eligible to vote in this round.');
+  }
   const uniqueIds = new Set(rankedPlayerIds.filter(Boolean));
   if (uniqueIds.size !== computedRequiredCount) {
     throw new Error(`You must pick ${computedRequiredCount} different answers.`);
@@ -442,7 +449,9 @@ export const checkAndProgressToResults = async (gameId) => {
   const playerIds = Object.keys(players);
   
   // Each voter must submit exactly 3 ranked votes.
-  const connectedPlayerIds = getConnectedPlayerIds(players);
+  const connectedPlayerIds = getConnectedPlayerIds(players).filter(
+    (playerId) => !(gameData.hostIsDisplayOnly && playerId === gameData.hostId)
+  );
   if (connectedPlayerIds.length < MIN_PLAYERS) {
     try {
       await updateDoc(gameRef, {
@@ -456,9 +465,10 @@ export const checkAndProgressToResults = async (gameId) => {
     }
     return;
   }
-  const votingPlayerIds = Array.isArray(gameData.votingPlayerIds)
+  const votingPlayerIds = (Array.isArray(gameData.votingPlayerIds)
     ? gameData.votingPlayerIds
-    : connectedPlayerIds;
+    : connectedPlayerIds
+  ).filter((playerId) => !(gameData.hostIsDisplayOnly && playerId === gameData.hostId));
   const requiredCount =
     typeof gameData.votingRequiredCount === 'number'
       ? gameData.votingRequiredCount
