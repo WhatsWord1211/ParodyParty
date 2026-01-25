@@ -51,13 +51,18 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const requestResultsProgress = (source) => {
+  const requestResultsProgress = async (source) => {
     if (hasRequestedResultsRef.current) return;
     hasRequestedResultsRef.current = true;
-    checkAndProgressToResults(gameId).catch((error) => {
+    try {
+      const progressed = await checkAndProgressToResults(gameId);
+      if (!progressed) {
+        hasRequestedResultsRef.current = false;
+      }
+    } catch (error) {
       console.error(`Failed to progress results from ${source}:`, error);
       hasRequestedResultsRef.current = false;
-    });
+    }
   };
 
   useEffect(() => {

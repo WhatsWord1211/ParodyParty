@@ -437,13 +437,13 @@ export const checkAndProgressToResults = async (gameId) => {
   const gameRef = doc(db, 'games', gameId);
   const gameSnap = await getDoc(gameRef);
   
-  if (!gameSnap.exists()) return;
+  if (!gameSnap.exists()) return false;
   
   const gameData = gameSnap.data();
   
   // Only check if we're in voting phase
-  if (gameData.phase !== 'voting') return;
-  if (gameData.scoredRound === gameData.round) return;
+  if (gameData.phase !== 'voting') return false;
+  if (gameData.scoredRound === gameData.round) return false;
   
   const players = gameData.players || {};
   const playerIds = Object.keys(players);
@@ -463,7 +463,7 @@ export const checkAndProgressToResults = async (gameId) => {
     } catch (error) {
       console.error('Error ending game due to player count:', error);
     }
-    return;
+    return true;
   }
   const votingPlayerIds = (Array.isArray(gameData.votingPlayerIds)
     ? gameData.votingPlayerIds
@@ -482,21 +482,24 @@ export const checkAndProgressToResults = async (gameId) => {
   const now = Date.now();
   const timerExpired = timerEndsAt && timerEndsAt <= now;
 
-  if (allVoted || timerExpired) {
-    try {
-      // Double-check phase hasn't changed
-      const currentSnap = await getDoc(gameRef);
-      if (currentSnap.exists() && currentSnap.data().phase === 'voting') {
-        // Calculate scores first
-        const { gameOver } = await calculateScores(gameId);
-        if (!gameOver) {
-          await updateDoc(gameRef, { phase: 'results' });
-        }
+  if (!allVoted && !timerExpired) return false;
+
+  try {
+    // Double-check phase hasn't changed
+    const currentSnap = await getDoc(gameRef);
+    if (currentSnap.exists() && currentSnap.data().phase === 'voting') {
+      // Calculate scores first
+      const { gameOver } = await calculateScores(gameId);
+      if (!gameOver) {
+        await updateDoc(gameRef, { phase: 'results' });
       }
-    } catch (error) {
-      console.error('Error progressing to results:', error);
     }
+  } catch (error) {
+    console.error('Error progressing to results:', error);
+    return false;
   }
+
+  return true;
 };
 
 export const resetGame = async (gameId) => {
