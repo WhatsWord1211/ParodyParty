@@ -385,6 +385,22 @@ input {
   border: 1px solid #e2e8f0;
 }
 
+.round-points {
+  margin-left: 8px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.round-answer {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.display-only .round-answer {
+  font-size: 12px;
+}
+
 .score-list {
   display: grid;
   gap: 12px;

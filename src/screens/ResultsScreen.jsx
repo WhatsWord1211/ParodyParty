@@ -228,6 +228,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
           currentPrompt: nextPrompt,
           usedPrompts: [...usedPromptIds, nextPrompt.promptId],
           roundResult: null,
+          roundScores: null,
           votingPlayerIds: null,
           votingRequiredCount: null
         });
@@ -384,6 +385,8 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
       ...player
     }));
     const sortedPlayers = [...allPlayers].sort((a, b) => (b.score || 0) - (a.score || 0));
+    const roundScores = gameData.roundScores || {};
+    const showRoundPoints = gameData.round > 1;
     const isHost = gameData.hostId === playerId;
     const topFirstVotes = Math.max(
       0,
@@ -429,7 +432,15 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
                 <strong>
                   #{index + 1} {player.name} {player.id === playerId ? '(You)' : ''}
                 </strong>
-                <div>Score: {player.score || 0}</div>
+                <div>
+                  Score: {player.score || 0}
+                  {showRoundPoints && roundScores[player.id]?.roundPoints !== undefined && (
+                    <span className="round-points">+{roundScores[player.id].roundPoints}</span>
+                  )}
+                </div>
+                {roundScores[player.id]?.answer && (
+                  <div className="round-answer">"{roundScores[player.id].answer}"</div>
+                )}
               </div>
             ))}
           </div>
@@ -464,6 +475,8 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
     ...player
   }));
   const sortedPlayers = [...allPlayers].sort((a, b) => (b.score || 0) - (a.score || 0));
+  const roundScores = gameData.roundScores || {};
+  const showRoundPoints = gameData.round > 1;
 
   return (
     <div className="page">
@@ -500,7 +513,15 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
               <strong>
                 #{index + 1} {player.name} {player.id === playerId ? '(You)' : ''}
               </strong>
-              <div>Score: {player.score || 0}</div>
+              <div>
+                Score: {player.score || 0}
+                {showRoundPoints && roundScores[player.id]?.roundPoints !== undefined && (
+                  <span className="round-points">+{roundScores[player.id].roundPoints}</span>
+                )}
+              </div>
+              {roundScores[player.id]?.answer && (
+                <div className="round-answer">"{roundScores[player.id].answer}"</div>
+              )}
             </div>
           ))}
         </div>

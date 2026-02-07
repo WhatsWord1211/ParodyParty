@@ -36,6 +36,7 @@ import {
  *   - votingRequiredCount: number | null
  *   - gameOverReason: 'not_enough_players' | null
  *   - pendingGameOver: boolean | null
+ *   - roundScores: { [playerId]: { roundPoints: number, answer: string } } | null
  *   - round: number
  *   - currentPrompt: { promptId, title, prompt }
  *   - timerEndsAt: timestamp
@@ -347,6 +348,7 @@ export const calculateScores = async (gameId) => {
 
     const updates = {};
     let winnerIds = [];
+    const roundScores = {};
 
     const votePoints = { 1: 5, 2: 3, 3: 1 };
     const playerStats = Object.entries(gameData.players || {}).map(([playerId, player]) => {
@@ -387,6 +389,7 @@ export const calculateScores = async (gameId) => {
         const currentFirstVotes = gameData.players[player.playerId]?.totalFirstPlaceVotes || 0;
         totalScores[player.playerId] = currentScore + scoreForRank;
         totalFirstVoteTotals[player.playerId] = currentFirstVotes + player.firstPlaceVotes;
+        roundScores[player.playerId] = { roundPoints: scoreForRank, answer: player.answer };
         updates[`players.${player.playerId}.score`] = increment(scoreForRank);
         updates[`players.${player.playerId}.totalFirstPlaceVotes`] = increment(player.firstPlaceVotes);
         updates[`players.${player.playerId}.submission`] = null;
@@ -408,6 +411,7 @@ export const calculateScores = async (gameId) => {
           answer: stat.answer
         }))
       };
+      updates.roundScores = roundScores;
     }
 
     const thresholdWinners = Object.keys(totalScores).filter((playerId) => totalScores[playerId] >= 10000);
@@ -521,6 +525,7 @@ export const resetGame = async (gameId) => {
     winnerIds: deleteField(),
     pendingGameOver: deleteField(),
     gameOverReason: deleteField(),
+    roundScores: deleteField(),
     votingPlayerIds: deleteField(),
     votingRequiredCount: deleteField()
   };
