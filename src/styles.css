@@ -121,6 +121,32 @@ input {
   z-index: 1;
 }
 
+.fullscreen-toggle {
+  position: absolute;
+  top: 16px;
+  right: 140px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.15s ease, opacity 0.15s ease;
+  z-index: 1;
+}
+
+.fullscreen-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+
+.display-only .fullscreen-toggle {
+  top: 12px;
+  right: 120px;
+}
+
 .sound-toggle:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
@@ -210,6 +236,38 @@ input {
 
 .display-only .lobby-header {
   margin-bottom: 12px;
+}
+
+.lobby-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.display-only .lobby-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.lobby-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.display-only .qr-wrapper {
+  margin: 0;
+}
+
+.display-only .qr-link {
+  font-size: 12px;
+}
+
+.display-only .players-list {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin-bottom: 8px;
 }
 
 .game-code {

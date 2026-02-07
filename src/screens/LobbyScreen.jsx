@@ -3,6 +3,7 @@ import { subscribeToGame, startGame } from '../services/gameService';
 import { getRandomPrompt } from '../utils/gameData';
 import { QRCodeCanvas } from 'qrcode.react';
 import SoundToggle from '../components/SoundToggle';
+import FullscreenToggle from '../components/FullscreenToggle';
 import useSoundPreference from '../hooks/useSoundPreference';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../constants/gameSettings';
 
@@ -73,6 +74,7 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
   return (
     <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
       <div className="card">
+        <FullscreenToggle isDisplayOnly={isDisplayOnly} />
         <SoundToggle
           soundEnabled={soundEnabled}
           onToggle={() => setSoundEnabled((prev) => !prev)}
@@ -84,54 +86,60 @@ export default function LobbyScreen({ gameId, playerId, isHost, isDisplayOnly, o
           <p className="subtitle">Share this code or QR so friends can join.</p>
         </div>
 
-        <div className="qr-wrapper">
-          <QRCodeCanvas value={joinUrl} size={180} />
-          <div className="qr-link">{joinUrl}</div>
-          <button
-            className="button button-outline"
-            onClick={async () => {
-              try {
-                if (navigator.share) {
-                  await navigator.share({
-                    title: 'Parody Party',
-                    text: 'Join my game of Parody Party!',
-                    url: joinUrl
-                  });
-                  setStatusMessage('Share sheet opened.');
-                  setStatusType('info');
-                  return;
-                }
+        <div className="lobby-layout">
+          <div className="lobby-panel">
+            <div className="qr-wrapper">
+              <QRCodeCanvas value={joinUrl} size={isDisplayOnly ? 150 : 180} />
+              <div className="qr-link">{joinUrl}</div>
+              <button
+                className="button button-outline"
+                onClick={async () => {
+                  try {
+                    if (navigator.share) {
+                      await navigator.share({
+                        title: 'Parody Party',
+                        text: 'Join my game of Parody Party!',
+                        url: joinUrl
+                      });
+                      setStatusMessage('Share sheet opened.');
+                      setStatusType('info');
+                      return;
+                    }
 
-                if (!navigator.clipboard?.writeText) {
-                  setStatusMessage('Sharing not supported. Manually copy the link.');
-                  setStatusType('error');
-                  return;
-                }
-                await navigator.clipboard.writeText(joinUrl);
-                setStatusMessage('Game link copied!');
-                setStatusType('info');
-              } catch (error) {
-                setStatusMessage('Share failed. Manually copy the link.');
-                setStatusType('error');
-              }
-            }}
-          >
-            Share Game Link
-          </button>
+                    if (!navigator.clipboard?.writeText) {
+                      setStatusMessage('Sharing not supported. Manually copy the link.');
+                      setStatusType('error');
+                      return;
+                    }
+                    await navigator.clipboard.writeText(joinUrl);
+                    setStatusMessage('Game link copied!');
+                    setStatusType('info');
+                  } catch (error) {
+                    setStatusMessage('Share failed. Manually copy the link.');
+                    setStatusType('error');
+                  }
+                }}
+              >
+                Share Game Link
+              </button>
+            </div>
+          </div>
+
+          <div className="lobby-panel">
+            <h3>Players ({connectedPlayers.length}/{MAX_PLAYERS})</h3>
+            <ul className="players-list">
+              {players.map((player) => (
+                <li key={player.id}>
+                  <span>
+                    {player.name} {player.id === playerId ? '(You)' : ''}
+                  </span>
+                  {player.id === gameData.hostId && <span className="badge">Host</span>}
+                  {player.connected === false && <span className="badge badge-muted">Disconnected</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-
-        <h3>Players ({connectedPlayers.length}/{MAX_PLAYERS})</h3>
-        <ul className="players-list">
-          {players.map((player) => (
-            <li key={player.id}>
-              <span>
-                {player.name} {player.id === playerId ? '(You)' : ''}
-              </span>
-              {player.id === gameData.hostId && <span className="badge">Host</span>}
-              {player.connected === false && <span className="badge badge-muted">Disconnected</span>}
-            </li>
-          ))}
-        </ul>
 
         {statusMessage && (
           <p className={`center ${statusType === 'error' ? 'error-text' : 'status-text'}`}>

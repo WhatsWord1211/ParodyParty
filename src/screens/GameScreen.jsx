@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { subscribeToGame, submitAnswer, checkAndProgressToVoting } from '../services/gameService';
 import { playRoundAudio, stopRoundAudio } from '../services/audioService';
 import SoundToggle from '../components/SoundToggle';
+import FullscreenToggle from '../components/FullscreenToggle';
 import useSoundPreference from '../hooks/useSoundPreference';
 
 export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate }) {
@@ -178,6 +179,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
   return (
     <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
       <div className="card">
+        <FullscreenToggle isDisplayOnly={isDisplayOnly} />
         <SoundToggle
           soundEnabled={soundEnabled}
           onToggle={() => setSoundEnabled((prev) => !prev)}

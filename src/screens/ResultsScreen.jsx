@@ -10,6 +10,7 @@ import {
 import { getRandomPrompt } from '../utils/gameData';
 import { playRoundAudio, stopRoundAudio } from '../services/audioService';
 import SoundToggle from '../components/SoundToggle';
+import FullscreenToggle from '../components/FullscreenToggle';
 import useSoundPreference from '../hooks/useSoundPreference';
 import { PROMPT_DURATION_MS, RESULTS_DURATION_MS } from '../constants/gameSettings';
 import {
@@ -288,6 +289,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
     return (
       <div className={`page ${isDisplayOnly ? 'display-only' : ''}`}>
         <div className="card">
+          <FullscreenToggle isDisplayOnly={isDisplayOnly} />
           <SoundToggle
             soundEnabled={soundEnabled}
             onToggle={() => setSoundEnabled((prev) => !prev)}
@@ -394,6 +396,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
     return (
       <div className="page">
         <div className="card">
+          <FullscreenToggle isDisplayOnly={isDisplayOnly} />
           <SoundToggle
             soundEnabled={soundEnabled}
             onToggle={() => setSoundEnabled((prev) => !prev)}
@@ -465,6 +468,7 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
   return (
     <div className="page">
       <div className="card">
+        <FullscreenToggle isDisplayOnly={isDisplayOnly} />
         <SoundToggle
           soundEnabled={soundEnabled}
           onToggle={() => setSoundEnabled((prev) => !prev)}
