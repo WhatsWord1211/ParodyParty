@@ -200,6 +200,7 @@ export const startGame = async (gameId, prompt = null) => {
 export const checkAndProgressToVoting = async (gameId) => {
   const gameRef = doc(db, 'games', gameId);
   try {
+    let progressed = false;
     await runTransaction(db, async (transaction) => {
       const gameSnap = await transaction.get(gameRef);
       if (!gameSnap.exists()) return;
@@ -219,6 +220,7 @@ export const checkAndProgressToVoting = async (gameId) => {
           timerEndsAt: null,
           winnerIds: []
         });
+        progressed = true;
         return;
       }
 
@@ -251,9 +253,12 @@ export const checkAndProgressToVoting = async (gameId) => {
       });
 
       transaction.update(gameRef, updates);
+      progressed = true;
     });
+    return progressed;
   } catch (error) {
     console.error('Error progressing to voting:', error);
+    return false;
   }
 };
 

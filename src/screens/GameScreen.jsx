@@ -10,6 +10,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
   const [answer, setAnswer] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const MAX_ANSWER_LENGTH = 50;
   const timerIntervalRef = useRef(null);
   const hasCheckedExpirationRef = useRef(false);
   const promptTimeoutRef = useRef(null);
@@ -28,13 +29,18 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const requestVotingProgress = (source) => {
+  const requestVotingProgress = async (source) => {
     if (hasRequestedVotingRef.current) return;
     hasRequestedVotingRef.current = true;
-    checkAndProgressToVoting(gameId).catch((error) => {
+    try {
+      const progressed = await checkAndProgressToVoting(gameId);
+      if (!progressed) {
+        hasRequestedVotingRef.current = false;
+      }
+    } catch (error) {
       console.error(`Failed to progress voting from ${source}:`, error);
       hasRequestedVotingRef.current = false;
-    });
+    }
   };
 
   useEffect(() => {
@@ -138,7 +144,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
             !(gameData.hostIsDisplayOnly && id === gameData.hostId)
         )
         .map(([, player]) => player);
-      const allSubmitted = players.every((player) => player.submission !== null);
+      const allSubmitted = players.length > 0 && players.every((player) => player.submission !== null);
       if (allSubmitted) {
         setTimeout(() => {
           requestVotingProgress('all-submitted');
@@ -163,7 +169,10 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
         !(gameData.hostIsDisplayOnly && id === gameData.hostId)
     )
     .map(([, player]) => player);
+  const allSubmitted = players.length > 0 && players.every((player) => player.submission !== null);
   const someDidNotAnswer = players.some((player) => player.submission === null && timeRemaining === 0);
+  const canEditAnswer =
+    !isDisplayOnly && gameData.phase === 'prompt' && timeRemaining > 0 && !allSubmitted;
 
   const handleSubmit = async () => {
     if (!answer.trim()) return;
@@ -200,7 +209,7 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
 
             {!isDisplayOnly && (
               <>
-                {!submitted && timeRemaining > 0 ? (
+                {canEditAnswer ? (
                   <div style={{ marginTop: 16 }}>
                     <input
                       ref={inputRef}
@@ -208,16 +217,35 @@ export default function GameScreen({ gameId, playerId, isDisplayOnly, onNavigate
                       placeholder="Your answer..."
                       value={answer}
                       onChange={(event) => setAnswer(event.target.value)}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck="false"
                       onFocus={() => {
                         setTimeout(() => {
                           inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }, 0);
                       }}
-                      maxLength={50}
+                      maxLength={MAX_ANSWER_LENGTH}
                     />
                     <button className="button button-primary" onClick={handleSubmit} disabled={!answer.trim()}>
-                      Submit
+                      {submitted ? 'Update Answer' : 'Submit'}
                     </button>
+                    <div
+                      className="center"
+                      style={{
+                        marginTop: 8,
+                        fontSize: 12,
+                        color: answer.length >= MAX_ANSWER_LENGTH ? '#dc2626' : '#6b7280'
+                      }}
+                    >
+                      {answer.length}/{MAX_ANSWER_LENGTH}
+                      {answer.length >= MAX_ANSWER_LENGTH ? ' (Max reached)' : ''}
+                    </div>
+                    {submitted && (
+                      <p className="center" style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>
+                        You can edit until time runs out.
+                      </p>
+                    )}
                   </div>
                 ) : submitted ? (
                   <div className="center" style={{ marginTop: 16 }}>

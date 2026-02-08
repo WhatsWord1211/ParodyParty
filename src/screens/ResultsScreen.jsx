@@ -110,11 +110,19 @@ export default function ResultsScreen({ gameId, playerId, isDisplayOnly, onNavig
 
   useEffect(() => {
     if (!hasInitialized) return;
-    if (gameData?.phase === 'voting' && soundEnabled) {
-      playRoundAudio('voting');
-    } else {
+    if (!soundEnabled) {
       stopRoundAudio();
+      return;
     }
+    if (gameData?.phase === 'voting') {
+      playRoundAudio('voting');
+      return;
+    }
+    if (gameData?.phase === 'gameOver') {
+      playRoundAudio('victory');
+      return;
+    }
+    stopRoundAudio();
   }, [gameData?.phase, soundEnabled, hasInitialized]);
 
   useEffect(() => {
